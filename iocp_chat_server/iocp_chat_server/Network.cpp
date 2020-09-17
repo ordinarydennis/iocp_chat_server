@@ -127,7 +127,12 @@ void Network::WokerThread()
 		if (FALSE == bSuccess || (0 == dwIoSize && TRUE == bSuccess))
 		{
 			printf("socket(%d) 접속 끊김\n", (int)pClientInfo->m_socketClient);
-			//!!!!여기 수정 할 것
+
+			stPacketHeader header;
+			header.mSize = 0;
+			char body[MAX_SOCKBUF] = { 0, };
+			mPacketPool.push(stPacket(pClientInfo->m_socketClient, header, body, MAX_SOCKBUF));
+
 			CloseSocket(pClientInfo);
 			continue;
 		}
@@ -140,8 +145,6 @@ void Network::WokerThread()
 		if (IOOperation::RECV == pOverlappedEx->m_eOperation)
 		{
 			pClientInfo->mRecvBuf[dwIoSize] = '\0';
-			//클라이언트에 메세지를 에코한다.
-			//SendMsg(pClientInfo, pClientInfo->mRecvBuf, dwIoSize);
 
 			//헤더파싱
 			stPacketHeader header;
@@ -159,7 +162,17 @@ void Network::WokerThread()
 		//Overlapped I/O Send작업 결과 뒤 처리
 		else if (IOOperation::SEND == pOverlappedEx->m_eOperation)
 		{
-			printf("[송신] bytes : %d , msg : %s\n", dwIoSize, pClientInfo->mSendBuf);
+			pClientInfo->mSendBuf[dwIoSize] = '\0';
+			//헤더파싱
+			stPacketHeader header;
+			memcpy_s(&header.mSize, sizeof(UINT16), pClientInfo->mSendBuf, sizeof(UINT16));
+			memcpy_s(&header.mPacket_id, sizeof(UINT16), &pClientInfo->mSendBuf[2], sizeof(UINT16));
+
+			char body[MAX_SOCKBUF] = { 0, };
+			UINT32 bodySize = (UINT32)dwIoSize - PACKET_HEADER_SIZE;
+			memcpy_s(body, bodySize, &pClientInfo->mRecvBuf[PACKET_HEADER_SIZE], bodySize);
+
+			printf("[송신] bytes : %d , msg : %s\n", dwIoSize, body);
 		}
 		//예외 상황
 		else
@@ -326,7 +339,7 @@ bool Network::BindIOCompletionPort(stClientInfo* pClientInfo)
 
 	return true;
 }
-stPacket Network::GetPackget()
+stPacket Network::ReceivePacket()
 {
 	stPacket front = mPacketPool.front();
 	mPacketPool.pop();

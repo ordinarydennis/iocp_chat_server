@@ -2,6 +2,7 @@
 
 #include "Define.h"
 #include <vector>
+#include <thread>
 
 class ChatServer
 {
@@ -14,9 +15,16 @@ class ChatServer
     // 4. 해당 class에 종속적인 타입별칭이 필요하다면, 변수 선언에 앞서 미리 정의
 
     // 5. 멤버변수 선언
+private:
+    std::thread	                mReceivePacketThread;
+    bool                        mReceivePacketRun = true;
 
 private:
     ChatServer() = default;
+
+    void SetReceivePacketThread();
+    void ReceivePacketThread();
+    void Waiting();
 
     // 6. 생성자/소멸자 선언
 public:

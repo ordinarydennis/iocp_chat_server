@@ -1,40 +1,71 @@
 #include "ChatServer.h"
 #include "Network.h"
 #include "ServerConfig.h"
+#include <string>
+#include <iostream>
 
 void ChatServer::Init()
 {
 	//네트워크 초기화
 	NetworkInstance.Init();
-
-	
 }
-
 void ChatServer::Run()
 {
 	NetworkInstance.Run();
-	//네트워크의 패킷 버퍼에서 패킷을 가져와서
-	//헤더 정보를 보고 분기한다.
-	
+	SetReceivePacketThread();
+	Waiting();
+}
+void ChatServer::Waiting()
+{
+	printf("아무 키나 누를 때까지 대기합니다\n");
+	while (true)
+	{
+		std::string inputCmd;
+		std::getline(std::cin, inputCmd);
 
-	//쓰레드로 따로 뺴기
-	while (1)
+		if (inputCmd == "quit")
+		{
+			break;
+		}
+	}
+}
+void ChatServer::SetReceivePacketThread()
+{
+	mReceivePacketThread = std::thread([this]() { ReceivePacketThread(); });
+}
+void ChatServer::ReceivePacketThread()
+{
+	while (mReceivePacketRun)
 	{
 		if (NetworkInstance.IsPacketPoolEmpty())
 			continue;
 
-		stPacket p = NetworkInstance.GetPackget();
+		stPacket p = NetworkInstance.ReceivePacket();
 
-		switch (p.mHeader.mPacket_id)
+		if (0 == p.mHeader.mSize)
 		{
-		case 1:
+			printf("User : %d Disconnection\n", p.mClientId);
+			continue;
+		}
+
+		PacketID packetId = static_cast<PacketID>(p.mHeader.mPacket_id);
+		switch (packetId)
+		{
+		case PacketID::DEV_ECHO:
 			NetworkInstance.SendData(p.mClientId, p.mBody, strlen(p.mBody));
 			break;
-			
+
 		}
 	}
 }
 void ChatServer::Destroy()
 {
+	//해제 순서 중요한가?
+	mReceivePacketRun = false;
+	if (mReceivePacketThread.joinable())
+	{
+		mReceivePacketThread.join();
+	}
+
 	NetworkInstance.Destroy();
 }

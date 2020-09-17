@@ -71,7 +71,7 @@ public:
     void Run();
     void Destroy();
 
-    stPacket GetPackget();
+    stPacket ReceivePacket();
     bool IsPacketPoolEmpty();
     void SendData(UINT32 userId, char* pMsg, int nLen);
 
