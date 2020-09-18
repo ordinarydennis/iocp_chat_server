@@ -17,13 +17,17 @@ class ChatServer
     // 5. 멤버변수 선언
 private:
     std::thread	                mReceivePacketThread;
+    std::thread	                mSendPacketThread;
     bool                        mReceivePacketRun = true;
+    bool                        mSendPacketRun = true;
 
 private:
     ChatServer() = default;
 
     void SetReceivePacketThread();
     void ReceivePacketThread();
+    void SetSendPacketThread();
+    void SendPacketThread();
     void Waiting();
 
     // 6. 생성자/소멸자 선언

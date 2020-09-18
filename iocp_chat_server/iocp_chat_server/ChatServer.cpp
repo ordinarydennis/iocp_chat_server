@@ -13,6 +13,7 @@ void ChatServer::Run()
 {
 	NetworkInstance.Run();
 	SetReceivePacketThread();
+	SetSendPacketThread();
 	Waiting();
 }
 void ChatServer::Waiting()
@@ -37,7 +38,7 @@ void ChatServer::ReceivePacketThread()
 {
 	while (mReceivePacketRun)
 	{
-		if (NetworkInstance.IsPacketPoolEmpty())
+		if (NetworkInstance.IsReceivePacketPoolEmpty())
 			continue;
 
 		stPacket p = NetworkInstance.ReceivePacket();
@@ -52,10 +53,25 @@ void ChatServer::ReceivePacketThread()
 		switch (packetId)
 		{
 		case PacketID::DEV_ECHO:
-			NetworkInstance.SendData(p.mClientId, p.mBody, strlen(p.mBody));
+			NetworkInstance.AddPacket(p);
 			break;
 
 		}
+	}
+}
+void ChatServer::SetSendPacketThread()
+{
+	mSendPacketThread = std::thread([this]() { SendPacketThread(); });
+}
+void ChatServer::SendPacketThread()
+{
+	while (mSendPacketRun)
+	{
+		if (NetworkInstance.IsSendPacketPoolEmpty())
+			continue;
+
+		stPacket p = NetworkInstance.GetSendPacket();
+		NetworkInstance.SendData(p.mClientId, p.mBody, strlen(p.mBody));
 	}
 }
 void ChatServer::Destroy()
@@ -65,6 +81,12 @@ void ChatServer::Destroy()
 	if (mReceivePacketThread.joinable())
 	{
 		mReceivePacketThread.join();
+	}
+
+	mSendPacketRun = false;
+	if (mSendPacketThread.joinable())
+	{
+		mSendPacketThread.join();
 	}
 
 	NetworkInstance.Destroy();

@@ -4,6 +4,7 @@
 #include <thread>
 #include <vector>
 #include <queue>
+#include <mutex>
 
 class Network
 {
@@ -17,17 +18,19 @@ class Network
 
     // 5. 멤버변수 선언
 private:
-    SOCKET      mListenSocket = INVALID_SOCKET;
-    HANDLE		mIOCPHandle = INVALID_HANDLE_VALUE;
-    bool		mIsWorkerRun = true;
-    bool		mIsAccepterRun = true;
+    SOCKET      mListenSocket   = INVALID_SOCKET;
+    HANDLE		mIOCPHandle     = INVALID_HANDLE_VALUE;
+    bool		mIsWorkerRun    = true;
+    bool		mIsAccepterRun  = true;
     //접속 되어있는 클라이언트 수
     int			mClientCnt = 0;
     std::thread	                mAccepterThread;
     std::vector<std::thread>    mIOWorkerThreads;
     std::vector<stClientInfo>   mClientInfos;
-    std::queue<stPacket>        mPacketPool;
-
+    std::queue<stPacket>        mReceivePacketPool;
+    std::queue<stPacket>        mSendPacketPool;
+    static std::once_flag       mflag;
+    static std::unique_ptr<Network> mInstance;
 private:
     Network() = default;
 
@@ -56,23 +59,22 @@ public:
 
     // 7. 정적 멤버함수들 선언
 public:
-    static Network& Instance()
-    {
-        static Network instance;
-        return instance;
-    }
 
     // 8. 가상 멤버함수들 선언
 public:
 
     // 9. 일반 멤버함수들 선언
 public:
+    static Network& Instance();
     void Init();
     void Run();
     void Destroy();
 
     stPacket ReceivePacket();
-    bool IsPacketPoolEmpty();
+    bool IsReceivePacketPoolEmpty();
+    void AddPacket(const stPacket& p);
+    stPacket GetSendPacket();
+    bool IsSendPacketPoolEmpty();
     void SendData(UINT32 userId, char* pMsg, int nLen);
 
     // 10. getter/setter 멤버함수들 선언

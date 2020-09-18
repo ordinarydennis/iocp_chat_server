@@ -7,6 +7,18 @@
 #include <iostream>
 #include <string>
 
+
+std::unique_ptr<Network> Network::mInstance = nullptr;
+std::once_flag Network::mflag;
+
+Network& Network::Instance()
+{
+	std::call_once(Network::mflag, []() {
+		Network::mInstance.reset(new Network);
+		});
+
+	return *Network::mInstance;
+}
 void Network::Init()
 {
 	CreateSocket();
@@ -131,7 +143,7 @@ void Network::WokerThread()
 			stPacketHeader header;
 			header.mSize = 0;
 			char body[MAX_SOCKBUF] = { 0, };
-			mPacketPool.push(stPacket(pClientInfo->m_socketClient, header, body, MAX_SOCKBUF));
+			mReceivePacketPool.push(stPacket(pClientInfo->m_socketClient, header, body, MAX_SOCKBUF));
 
 			CloseSocket(pClientInfo);
 			continue;
@@ -155,7 +167,7 @@ void Network::WokerThread()
 			UINT32 bodySize = (UINT32)dwIoSize - PACKET_HEADER_SIZE;
 			memcpy_s(body, bodySize, &pClientInfo->mRecvBuf[PACKET_HEADER_SIZE], bodySize);
 		
-			mPacketPool.push(stPacket(pClientInfo->m_socketClient, header, body, bodySize));
+			mReceivePacketPool.push(stPacket(pClientInfo->m_socketClient, header, body, bodySize));
 
 			BindRecv(pClientInfo);
 		}
@@ -341,13 +353,27 @@ bool Network::BindIOCompletionPort(stClientInfo* pClientInfo)
 }
 stPacket Network::ReceivePacket()
 {
-	stPacket front = mPacketPool.front();
-	mPacketPool.pop();
+	stPacket front = mReceivePacketPool.front();
+	mReceivePacketPool.pop();
 	return front;
 }
-bool Network::IsPacketPoolEmpty()
+bool Network::IsReceivePacketPoolEmpty()
 {
-	return mPacketPool.empty();
+	return mReceivePacketPool.empty();
+}
+void Network::AddPacket(const stPacket& p)
+{
+	mSendPacketPool.push(p);
+}
+bool Network::IsSendPacketPoolEmpty()
+{
+	return mSendPacketPool.empty();
+}
+stPacket Network::GetSendPacket()
+{
+	stPacket front = mSendPacketPool.front();
+	mSendPacketPool.pop();
+	return front;
 }
 void Network::SendData(UINT32 userId, char* pMsg, int nLen)
 {
