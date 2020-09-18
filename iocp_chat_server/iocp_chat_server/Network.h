@@ -27,13 +27,14 @@ private:
     std::thread	                mAccepterThread;
     std::vector<std::thread>    mIOWorkerThreads;
     std::vector<stClientInfo>   mClientInfos;
-    std::queue<stPacket>        mReceivePacketPool;
-    std::queue<stPacket>        mSendPacketPool;
-    static std::once_flag       mflag;
-    static std::unique_ptr<Network> mInstance;
-private:
-    Network() = default;
+    //트리거가 된 유저들은 유저풀에 큐잉한다.
+    std::queue<stClientInfo*>    mClientPoolRecvPacket;
+    std::queue<stClientInfo*>    mClientPoolSendPacket;
+    
+    
+    stPacket                    mSendingPacket;     //현재 전송중인 패킷
 
+private:
     void CreateSocket();
     void BindandListen();
     void CreateIOCP();
@@ -51,6 +52,7 @@ private:
 
     // 6. 생성자/소멸자 선언
 public:
+    Network() = default;
     ~Network() { WSACleanup(); };
     Network(const Network&) = delete;
     Network(Network&&) = delete;
@@ -65,21 +67,20 @@ public:
 
     // 9. 일반 멤버함수들 선언
 public:
-    static Network& Instance();
     void Init();
     void Run();
     void Destroy();
 
-    stPacket ReceivePacket();
-    bool IsReceivePacketPoolEmpty();
-    void AddPacket(const stPacket& p);
-    stPacket GetSendPacket();
-    bool IsSendPacketPoolEmpty();
-    void SendData(UINT32 userId, char* pMsg, int nLen);
+    bool IsEmptyClientPoolRecvPacket();
+    stClientInfo* GetClientReceivedPacket();
+    
+    bool IsEmptyClientPoolSendPacket();
+    stClientInfo* GetClientSendPacket();
+    
+    void SendData(stPacket packet);
+    void AddClient(stClientInfo* c);
 
     // 10. getter/setter 멤버함수들 선언
 public:
 
 };
-
-#define NetworkInstance Network::Instance()

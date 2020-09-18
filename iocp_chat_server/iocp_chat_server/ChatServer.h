@@ -3,6 +3,8 @@
 #include "Define.h"
 #include <vector>
 #include <thread>
+#include <memory>
+#include "Network.h"
 
 class ChatServer
 {
@@ -20,10 +22,9 @@ private:
     std::thread	                mSendPacketThread;
     bool                        mReceivePacketRun = true;
     bool                        mSendPacketRun = true;
+    std::unique_ptr<Network>    mNetwork;
 
 private:
-    ChatServer() = default;
-
     void SetReceivePacketThread();
     void ReceivePacketThread();
     void SetSendPacketThread();
@@ -32,6 +33,7 @@ private:
 
     // 6. 생성자/소멸자 선언
 public:
+    ChatServer() = default;
     ~ChatServer() { WSACleanup(); };
     ChatServer(const ChatServer&) = delete;
     ChatServer(ChatServer&&) = delete;
@@ -40,11 +42,6 @@ public:
 
     // 7. 정적 멤버함수들 선언
 public:
-    static ChatServer& Instance()
-    {
-        static ChatServer instance;
-        return instance;
-    }
 
     // 8. 가상 멤버함수들 선언
 public:
@@ -59,5 +56,3 @@ public:
 public:
 
 };
-
-#define ChatServerInstance ChatServer::Instance()

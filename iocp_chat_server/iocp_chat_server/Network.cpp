@@ -7,18 +7,6 @@
 #include <iostream>
 #include <string>
 
-
-std::unique_ptr<Network> Network::mInstance = nullptr;
-std::once_flag Network::mflag;
-
-Network& Network::Instance()
-{
-	std::call_once(Network::mflag, []() {
-		Network::mInstance.reset(new Network);
-		});
-
-	return *Network::mInstance;
-}
 void Network::Init()
 {
 	CreateSocket();
@@ -34,7 +22,7 @@ void Network::CreateSocket()
 	if (0 != nRet)
 	{
 		printf("[ERROR] WSAStartup()함수 실패 : %d\n", WSAGetLastError());
-		throw Error::WSASTARTUP;
+		//throw Error::WSASTARTUP;
 	}
 
 	//연결지향형 TCP , Overlapped I/O 소켓을 생성
@@ -43,7 +31,7 @@ void Network::CreateSocket()
 	if (INVALID_SOCKET == mListenSocket)
 	{
 		printf("[에러] socket()함수 실패 : %d\n", WSAGetLastError());
-		throw Error::SOCKET_CREATE;
+		//throw Error::SOCKET_CREATE;
 	}
 }
 void Network::BindandListen()
@@ -92,7 +80,6 @@ void Network::CreateClient(const UINT32 maxClientCount)
 void Network::Run()
 {
 	SetWokerThread();
-
 	SetAccepterThread();
 }
 void Network::SetWokerThread()
@@ -143,7 +130,7 @@ void Network::WokerThread()
 			stPacketHeader header;
 			header.mSize = 0;
 			char body[MAX_SOCKBUF] = { 0, };
-			mReceivePacketPool.push(stPacket(pClientInfo->m_socketClient, header, body, MAX_SOCKBUF));
+			//mReceivePacketPool.push(stPacket(pClientInfo->m_socketClient, header, body, MAX_SOCKBUF));
 
 			CloseSocket(pClientInfo);
 			continue;
@@ -156,24 +143,46 @@ void Network::WokerThread()
 		//Overlapped I/O Recv작업 결과 뒤 처리
 		if (IOOperation::RECV == pOverlappedEx->m_eOperation)
 		{
+			// TODO: 이 코드 굳이 있어야 하는지?
 			pClientInfo->mRecvBuf[dwIoSize] = '\0';
-
 			//헤더파싱
 			stPacketHeader header;
 			memcpy_s(&header.mSize, sizeof(UINT16), pClientInfo->mRecvBuf, sizeof(UINT16));
 			memcpy_s(&header.mPacket_id, sizeof(UINT16), &pClientInfo->mRecvBuf[2], sizeof(UINT16));
 
-			char body[MAX_SOCKBUF] = {0,};
+			char body[MAX_SOCKBUF] = { 0, };
 			UINT32 bodySize = (UINT32)dwIoSize - PACKET_HEADER_SIZE;
 			memcpy_s(body, bodySize, &pClientInfo->mRecvBuf[PACKET_HEADER_SIZE], bodySize);
-		
-			mReceivePacketPool.push(stPacket(pClientInfo->m_socketClient, header, body, bodySize));
+
+			pClientInfo->mReceivePacketPool.push(stPacket(pClientInfo->m_socketClient, header, body, bodySize));
+
+			mClientPoolRecvPacket.push(pClientInfo);
+
+	
+			// TODO: lock
+			//mReceivePacketPool.push(stPacket(pClientInfo->m_socketClient, header, body, bodySize));
 
 			BindRecv(pClientInfo);
 		}
 		//Overlapped I/O Send작업 결과 뒤 처리
 		else if (IOOperation::SEND == pOverlappedEx->m_eOperation)
 		{
+			//if (0 < mSendingPacket.mClientId && mSendingPacket.mHeader.mSize != dwIoSize)
+			//{
+			//	// TODO: strlen(mSendingPacket.mBody) 개선, 문자열 데이터에서만 해당되는 함수
+			//	UINT32 bodySize = strlen(mSendingPacket.mBody);
+			//	mReceivePacketPool.push(
+			//		stPacket(
+			//			mSendingPacket.mClientId,
+			//			mSendingPacket.mHeader,
+			//			mSendingPacket.mBody, 
+			//			bodySize
+			//		)
+			//	);
+			//	mSendingPacket.mClientId = 0;
+			//	//pop send pool   
+			//}
+				
 			pClientInfo->mSendBuf[dwIoSize] = '\0';
 			//헤더파싱
 			stPacketHeader header;
@@ -351,32 +360,45 @@ bool Network::BindIOCompletionPort(stClientInfo* pClientInfo)
 
 	return true;
 }
-stPacket Network::ReceivePacket()
+stClientInfo* Network::GetClientReceivedPacket()
 {
-	stPacket front = mReceivePacketPool.front();
-	mReceivePacketPool.pop();
+	stClientInfo* front = mClientPoolRecvPacket.front();
+	mClientPoolRecvPacket.pop();
 	return front;
 }
-bool Network::IsReceivePacketPoolEmpty()
+bool Network::IsEmptyClientPoolRecvPacket()
 {
-	return mReceivePacketPool.empty();
+	return mClientPoolRecvPacket.empty();
 }
-void Network::AddPacket(const stPacket& p)
+stClientInfo* Network::GetClientSendPacket()
 {
-	mSendPacketPool.push(p);
-}
-bool Network::IsSendPacketPoolEmpty()
-{
-	return mSendPacketPool.empty();
-}
-stPacket Network::GetSendPacket()
-{
-	stPacket front = mSendPacketPool.front();
-	mSendPacketPool.pop();
+	stClientInfo* front = mClientPoolSendPacket.front();
+	mClientPoolSendPacket.pop();
 	return front;
 }
-void Network::SendData(UINT32 userId, char* pMsg, int nLen)
+bool Network::IsEmptyClientPoolSendPacket()
 {
+	return mClientPoolSendPacket.empty();
+}
+void Network::AddClient(stClientInfo* c)
+{
+	mClientPoolSendPacket.push(c);
+}
+
+void Network::SendData(stPacket packet)
+{
+	//전송중인 패킷이 있는지 확인
+	if (0 != mSendingPacket.mClientId)
+	{
+		//스핀락
+	}
+
+	UINT32 userId = packet.mClientId;
+	char* pMsg = packet.mBody;
+	int nLen = sizeof(packet.mBody);
+	UINT16 packetId = packet.mHeader.mPacket_id;
+
+
 	std::vector<stClientInfo>::iterator ptr;
 	for (ptr = mClientInfos.begin(); ptr != mClientInfos.end(); ++ptr)
 	{
@@ -388,7 +410,8 @@ void Network::SendData(UINT32 userId, char* pMsg, int nLen)
 		//헤더 정보 채워서 보낸다.
 		stPacketHeader header;
 		header.mSize = static_cast<UINT16>(strlen(pMsg) + PACKET_HEADER_SIZE);
-		header.mPacket_id = 1;	
+		// TODO: 여기 수정 해야함!
+		header.mPacket_id = packetId;
 		memcpy_s(buff, sizeof(stPacketHeader), &header, sizeof(stPacketHeader));
 
 		UINT32 bodySize = strlen(pMsg);

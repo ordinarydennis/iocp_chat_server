@@ -2,17 +2,11 @@
 
 int main()
 {
-	try
-	{
-		ChatServerInstance.Init();
-		ChatServerInstance.Run();
-	}
-	catch (Error error)
-	{
-		return static_cast<int>(error);
-	}
+	ChatServer chatServer;
 
-	ChatServerInstance.Destroy();
+	chatServer.Init();
+	chatServer.Run();
+	chatServer.Destroy();
 
 	return static_cast<int>(Error::NONE);
 }

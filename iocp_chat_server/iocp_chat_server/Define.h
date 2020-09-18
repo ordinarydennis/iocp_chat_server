@@ -2,6 +2,7 @@
 
 #include <winsock2.h>
 #include <Ws2tcpip.h>
+#include <queue>
 #include "ServerConfig.h"
 #include "NetworkConfig.h"
 
@@ -51,23 +52,6 @@ struct stOverlappedEx
 	IOOperation m_eOperation;		
 };
 
-struct stClientInfo
-{
-	SOCKET			m_socketClient;			
-	stOverlappedEx	m_stRecvOverlappedEx;	
-	stOverlappedEx	m_stSendOverlappedEx;	
-
-	char			mRecvBuf[MAX_SOCKBUF]; 
-	char			mSendBuf[MAX_SOCKBUF]; 
-
-	stClientInfo()
-	{
-		ZeroMemory(&m_stRecvOverlappedEx, sizeof(stOverlappedEx));
-		ZeroMemory(&m_stSendOverlappedEx, sizeof(stOverlappedEx));
-		m_socketClient = INVALID_SOCKET;
-	}
-};
-
 struct stPacketHeader
 {
 	UINT16			mSize = 0;
@@ -82,11 +66,36 @@ struct stPacket
 	stPacketHeader	mHeader;
 	char			mBody[MAX_SOCKBUF];
 
+	stPacket()
+	{
+		ZeroMemory(&mBody, MAX_SOCKBUF);
+	};
+
 	stPacket(UINT32 ClientId, stPacketHeader Header, const char* Body, UINT16 size)
 	{
 		mClientId = ClientId;
 		mHeader = Header;
 		ZeroMemory(&mBody, MAX_SOCKBUF);
 		memcpy_s(mBody, size, Body, size);
+	}
+};
+
+struct stClientInfo
+{
+	SOCKET			m_socketClient;
+	stOverlappedEx	m_stRecvOverlappedEx;
+	stOverlappedEx	m_stSendOverlappedEx;
+
+	std::queue<stPacket>        mReceivePacketPool;
+	std::queue<stPacket>        mSendPacketPool;
+
+	char			mRecvBuf[MAX_SOCKBUF];
+	char			mSendBuf[MAX_SOCKBUF];
+
+	stClientInfo()
+	{
+		ZeroMemory(&m_stRecvOverlappedEx, sizeof(stOverlappedEx));
+		ZeroMemory(&m_stSendOverlappedEx, sizeof(stOverlappedEx));
+		m_socketClient = INVALID_SOCKET;
 	}
 };

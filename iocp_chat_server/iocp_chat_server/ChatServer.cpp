@@ -1,17 +1,18 @@
 #include "ChatServer.h"
-#include "Network.h"
+
 #include "ServerConfig.h"
 #include <string>
 #include <iostream>
 
 void ChatServer::Init()
 {
+	mNetwork = std::make_unique<Network>();
 	//네트워크 초기화
-	NetworkInstance.Init();
+	mNetwork->Init();
 }
 void ChatServer::Run()
 {
-	NetworkInstance.Run();
+	mNetwork->Run();
 	SetReceivePacketThread();
 	SetSendPacketThread();
 	Waiting();
@@ -38,22 +39,26 @@ void ChatServer::ReceivePacketThread()
 {
 	while (mReceivePacketRun)
 	{
-		if (NetworkInstance.IsReceivePacketPoolEmpty())
+		if (mNetwork->IsEmptyClientPoolRecvPacket())
 			continue;
 
-		stPacket p = NetworkInstance.ReceivePacket();
+		stClientInfo* clientInfo = mNetwork->GetClientReceivedPacket();
+
+		if (clientInfo->mReceivePacketPool.empty())
+			continue;
+
+		stPacket p = clientInfo->mReceivePacketPool.front();
+		clientInfo->mReceivePacketPool.pop();
 
 		if (0 == p.mHeader.mSize)
-		{
-			printf("User : %d Disconnection\n", p.mClientId);
 			continue;
-		}
 
 		PacketID packetId = static_cast<PacketID>(p.mHeader.mPacket_id);
 		switch (packetId)
 		{
 		case PacketID::DEV_ECHO:
-			NetworkInstance.AddPacket(p);
+			clientInfo->mSendPacketPool.push(p);
+			mNetwork->AddClient(clientInfo);
 			break;
 
 		}
@@ -67,11 +72,15 @@ void ChatServer::SendPacketThread()
 {
 	while (mSendPacketRun)
 	{
-		if (NetworkInstance.IsSendPacketPoolEmpty())
+		if (mNetwork->IsEmptyClientPoolSendPacket())
 			continue;
 
-		stPacket p = NetworkInstance.GetSendPacket();
-		NetworkInstance.SendData(p.mClientId, p.mBody, strlen(p.mBody));
+		stClientInfo* c = mNetwork->GetClientSendPacket();
+		stPacket p = c->mSendPacketPool.front();
+		mNetwork->SendData(p);
+		//p 따로 저장해서 송신 완료 후 삭제 하기
+		//c->mSendPacketPool.pop();
+		//mNetwork->SendData(p);
 	}
 }
 void ChatServer::Destroy()
@@ -89,5 +98,5 @@ void ChatServer::Destroy()
 		mSendPacketThread.join();
 	}
 
-	NetworkInstance.Destroy();
+	mNetwork->Destroy();
 }
