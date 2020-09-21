@@ -74,7 +74,7 @@ void Network::CreateClient(const UINT32 maxClientCount)
 {
 	for (UINT32 i = 0; i < maxClientCount; ++i)
 	{
-		mClientInfos.emplace_back();
+		mClientInfos.emplace_back(i);
 	}
 }
 void Network::Run()
@@ -154,46 +154,26 @@ void Network::WokerThread()
 			UINT32 bodySize = (UINT32)dwIoSize - PACKET_HEADER_SIZE;
 			memcpy_s(body, bodySize, &pClientInfo->mRecvBuf[PACKET_HEADER_SIZE], bodySize);
 
-			pClientInfo->mReceivePacketPool.push(stPacket(pClientInfo->m_socketClient, header, body, bodySize));
+			pClientInfo->mRecvPacketPool.push(stPacket(pClientInfo->mId, 0, header, body, bodySize));
 
-			mClientPoolRecvPacket.push(pClientInfo);
-
-	
 			// TODO: lock
-			//mReceivePacketPool.push(stPacket(pClientInfo->m_socketClient, header, body, bodySize));
+			mClientPoolRecvedPacket.push(pClientInfo);
 
 			BindRecv(pClientInfo);
 		}
 		//Overlapped I/O Send작업 결과 뒤 처리
 		else if (IOOperation::SEND == pOverlappedEx->m_eOperation)
 		{
-			//if (0 < mSendingPacket.mClientId && mSendingPacket.mHeader.mSize != dwIoSize)
-			//{
-			//	// TODO: strlen(mSendingPacket.mBody) 개선, 문자열 데이터에서만 해당되는 함수
-			//	UINT32 bodySize = strlen(mSendingPacket.mBody);
-			//	mReceivePacketPool.push(
-			//		stPacket(
-			//			mSendingPacket.mClientId,
-			//			mSendingPacket.mHeader,
-			//			mSendingPacket.mBody, 
-			//			bodySize
-			//		)
-			//	);
-			//	mSendingPacket.mClientId = 0;
-			//	//pop send pool   
-			//}
+			if (dwIoSize != pClientInfo->mLastSendPacket.mHeader.mSize)
+			{
+				//재전송 한다.
+				printf("[ERROR] 송신 실패\n");
+				//TODO: lock
+				pClientInfo->mSendPacketPool.push(pClientInfo->mLastSendPacket);
+			}
 				
-			pClientInfo->mSendBuf[dwIoSize] = '\0';
-			//헤더파싱
-			stPacketHeader header;
-			memcpy_s(&header.mSize, sizeof(UINT16), pClientInfo->mSendBuf, sizeof(UINT16));
-			memcpy_s(&header.mPacket_id, sizeof(UINT16), &pClientInfo->mSendBuf[2], sizeof(UINT16));
-
-			char body[MAX_SOCKBUF] = { 0, };
-			UINT32 bodySize = (UINT32)dwIoSize - PACKET_HEADER_SIZE;
-			memcpy_s(body, bodySize, &pClientInfo->mRecvBuf[PACKET_HEADER_SIZE], bodySize);
-
-			printf("[송신] bytes : %d , msg : %s\n", dwIoSize, body);
+			pClientInfo->m_bSending = false;
+			printf("유저 %d bytes : %d 송신 완료\n", pClientInfo->mId, dwIoSize);
 		}
 		//예외 상황
 		else
@@ -360,66 +340,52 @@ bool Network::BindIOCompletionPort(stClientInfo* pClientInfo)
 
 	return true;
 }
-stClientInfo* Network::GetClientReceivedPacket()
+stClientInfo* Network::GetClientRecvedPacket()
 {
-	stClientInfo* front = mClientPoolRecvPacket.front();
-	mClientPoolRecvPacket.pop();
+	stClientInfo* front = mClientPoolRecvedPacket.front();
+	mClientPoolRecvedPacket.pop();
 	return front;
 }
 bool Network::IsEmptyClientPoolRecvPacket()
 {
-	return mClientPoolRecvPacket.empty();
+	return mClientPoolRecvedPacket.empty();
 }
-stClientInfo* Network::GetClientSendPacket()
+stClientInfo* Network::GetClientSendingPacket()
 {
-	stClientInfo* front = mClientPoolSendPacket.front();
-	mClientPoolSendPacket.pop();
+	//TODO : lock
+	stClientInfo* front = mClientPoolSendingPacket.front();
+	mClientPoolSendingPacket.pop();
 	return front;
 }
 bool Network::IsEmptyClientPoolSendPacket()
 {
-	return mClientPoolSendPacket.empty();
+	return mClientPoolSendingPacket.empty();
 }
-void Network::AddClient(stClientInfo* c)
+void Network::AddToClientPoolSendPacket(stClientInfo* c)
 {
-	mClientPoolSendPacket.push(c);
+	mClientPoolSendingPacket.push(c);
 }
-
 void Network::SendData(stPacket packet)
 {
-	//전송중인 패킷이 있는지 확인
-	if (0 != mSendingPacket.mClientId)
-	{
-		//스핀락
-	}
-
-	UINT32 userId = packet.mClientId;
 	char* pMsg = packet.mBody;
 	int nLen = sizeof(packet.mBody);
 	UINT16 packetId = packet.mHeader.mPacket_id;
 
+	char buff[MAX_SOCKBUF] = { 0, };
 
-	std::vector<stClientInfo>::iterator ptr;
-	for (ptr = mClientInfos.begin(); ptr != mClientInfos.end(); ++ptr)
-	{
-		if (ptr->m_socketClient != userId)
-			continue;
+	//헤더 정보 채워서 보낸다.
+	stPacketHeader header;
+	header.mSize = static_cast<UINT16>(strlen(pMsg) + PACKET_HEADER_SIZE);
+	// TODO: 여기 수정 해야함!
+	header.mPacket_id = packetId;
+	memcpy_s(buff, sizeof(stPacketHeader), &header, sizeof(stPacketHeader));
 
-		char buff[MAX_SOCKBUF] = { 0, };
+	UINT32 bodySize = strlen(pMsg);
+	memcpy_s(&buff[PACKET_HEADER_SIZE], bodySize, pMsg, bodySize);
 
-		//헤더 정보 채워서 보낸다.
-		stPacketHeader header;
-		header.mSize = static_cast<UINT16>(strlen(pMsg) + PACKET_HEADER_SIZE);
-		// TODO: 여기 수정 해야함!
-		header.mPacket_id = packetId;
-		memcpy_s(buff, sizeof(stPacketHeader), &header, sizeof(stPacketHeader));
+	stClientInfo c = mClientInfos.at(packet.mClientTo);
+	SendMsg(&c, buff, header.mSize);
 
-		UINT32 bodySize = strlen(pMsg);
-		memcpy_s(&buff[PACKET_HEADER_SIZE], bodySize, pMsg, bodySize);
-
-		SendMsg(&(*ptr), buff, header.mSize);
-		break;
-	}
 }
 //생성되어있는 쓰레드를 파괴한다.
 void Network::DestroyThread()

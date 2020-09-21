@@ -27,18 +27,16 @@ private:
     std::thread	                mAccepterThread;
     std::vector<std::thread>    mIOWorkerThreads;
     std::vector<stClientInfo>   mClientInfos;
-    //트리거가 된 유저들은 유저풀에 큐잉한다.
-    std::queue<stClientInfo*>    mClientPoolRecvPacket;
-    std::queue<stClientInfo*>    mClientPoolSendPacket;
-    
-    
-    stPacket                    mSendingPacket;     //현재 전송중인 패킷
-
+ 
+    std::queue<stClientInfo*>    mClientPoolRecvedPacket;
+    std::queue<stClientInfo*>    mClientPoolSendingPacket;
+  
 private:
     void CreateSocket();
     void BindandListen();
     void CreateIOCP();
     void CreateClient(const UINT32 maxClientCount);
+
     void SetWokerThread();
     void WokerThread();
     bool SendMsg(stClientInfo * pClientInfo, char* pMsg, int nLen);
@@ -72,13 +70,13 @@ public:
     void Destroy();
 
     bool IsEmptyClientPoolRecvPacket();
-    stClientInfo* GetClientReceivedPacket();
+    stClientInfo* GetClientRecvedPacket();
     
     bool IsEmptyClientPoolSendPacket();
-    stClientInfo* GetClientSendPacket();
+    stClientInfo* GetClientSendingPacket();
     
     void SendData(stPacket packet);
-    void AddClient(stClientInfo* c);
+    void AddToClientPoolSendPacket(stClientInfo* c);
 
     // 10. getter/setter 멤버함수들 선언
 public:

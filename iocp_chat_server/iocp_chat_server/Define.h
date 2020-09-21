@@ -62,7 +62,8 @@ struct stPacketHeader
 
 struct stPacket
 {
-	UINT32			mClientId = 0;
+	UINT32			mClientFrom = 0;
+	UINT32			mClientTo = 0;
 	stPacketHeader	mHeader;
 	char			mBody[MAX_SOCKBUF];
 
@@ -71,9 +72,10 @@ struct stPacket
 		ZeroMemory(&mBody, MAX_SOCKBUF);
 	};
 
-	stPacket(UINT32 ClientId, stPacketHeader Header, const char* Body, UINT16 size)
+	stPacket(UINT32 ClientFrom, UINT32 ClientTo, stPacketHeader Header, const char* Body, UINT16 size)
 	{
-		mClientId = ClientId;
+		mClientFrom = ClientFrom;
+		mClientTo = ClientTo;
 		mHeader = Header;
 		ZeroMemory(&mBody, MAX_SOCKBUF);
 		memcpy_s(mBody, size, Body, size);
@@ -82,18 +84,25 @@ struct stPacket
 
 struct stClientInfo
 {
+	INT32			mId = 0;
+	//TODO: 변수명 통일
 	SOCKET			m_socketClient;
 	stOverlappedEx	m_stRecvOverlappedEx;
 	stOverlappedEx	m_stSendOverlappedEx;
 
-	std::queue<stPacket>        mReceivePacketPool;
+	std::queue<stPacket>        mRecvPacketPool;
 	std::queue<stPacket>        mSendPacketPool;
 
-	char			mRecvBuf[MAX_SOCKBUF];
-	char			mSendBuf[MAX_SOCKBUF];
+	stPacket					mLastSendPacket;
 
-	stClientInfo()
+	char			mRecvBuf[MAX_SOCKBUF] = {0,};
+	char			mSendBuf[MAX_SOCKBUF] = {0,};
+
+	bool			m_bSending = false;
+
+	stClientInfo(INT32 id)
 	{
+		mId = id;
 		ZeroMemory(&m_stRecvOverlappedEx, sizeof(stOverlappedEx));
 		ZeroMemory(&m_stSendOverlappedEx, sizeof(stOverlappedEx));
 		m_socketClient = INVALID_SOCKET;

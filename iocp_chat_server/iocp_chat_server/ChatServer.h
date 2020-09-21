@@ -19,7 +19,8 @@ class ChatServer
     // 5. 멤버변수 선언
 private:
     std::thread	                mReceivePacketThread;
-    std::thread	                mSendPacketThread;
+    //std::thread	                mSendPacketThread;
+    std::vector<std::thread>    mSendPacketThreads;
     bool                        mReceivePacketRun = true;
     bool                        mSendPacketRun = true;
     std::unique_ptr<Network>    mNetwork;
