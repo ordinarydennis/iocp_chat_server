@@ -7,7 +7,6 @@
 void ChatServer::Init()
 {
 	mNetwork = std::make_unique<Network>();
-	//네트워크 초기화
 	mNetwork->Init();
 }
 void ChatServer::Run()
@@ -40,16 +39,14 @@ void ChatServer::ReceivePacketThread()
 	while (mReceivePacketRun)
 	{
 		if (mNetwork->IsEmptyClientPoolRecvPacket())
+		{
+			//sleep
 			continue;
+		}
+		
+		ClientInfo* clientInfo = mNetwork->GetClientRecvedPacket();
 
-		stClientInfo* clientInfo = mNetwork->GetClientRecvedPacket();
-
-		if (clientInfo->mRecvPacketPool.empty())
-			continue;
-
-		stPacket p = clientInfo->mRecvPacketPool.front();
-		clientInfo->mRecvPacketPool.pop();
-
+		stPacket p = clientInfo->GetRecvPacket();
 		if (0 == p.mHeader.mSize)
 			continue;
 
@@ -58,7 +55,7 @@ void ChatServer::ReceivePacketThread()
 		{
 		case PacketID::DEV_ECHO:
 			p.mClientTo = p.mClientFrom;
-			clientInfo->mSendPacketPool.push(p);
+			clientInfo->AddSendPacket(p);
 			mNetwork->AddToClientPoolSendPacket(clientInfo);
 			break;
 		}
@@ -68,7 +65,7 @@ void ChatServer::SetSendPacketThread()
 {
 	//mSendPacketThread = std::thread([this]() { SendPacketThread(); });
 	//적절한 쓰래드 수는?
-	for (int i = 0; i < 1; i++)
+	for (int i = 0; i < 2; i++)
 	{
 		mSendPacketThreads.emplace_back([this]() { SendPacketThread(); });
 	}
@@ -78,24 +75,28 @@ void ChatServer::SendPacketThread()
 	while (mSendPacketRun)
 	{
 		if (mNetwork->IsEmptyClientPoolSendPacket())
+		{
+			//sleep
 			continue;
-
-		//TODO: lock
-		stClientInfo* c = mNetwork->GetClientSendingPacket();
+		}
+			
+		ClientInfo* c = mNetwork->GetClientSendingPacket();
 		
-		if (c->mSendPacketPool.empty())
+		stPacket p = c->GetSendPacket();
+		if (0 == p.mHeader.mSize)
+		{
 			continue;
+		}
 
 		//TODO: 전송중인 패킷이 있는지 확인
 		//Sleep 말고 다른 방식으로 개선하자 개선하자
-		while (c->m_bSending)
+		while (c->IsSending())
 		{
 			Sleep(50);
 		};
 
-		stPacket p = c->mSendPacketPool.front();
-		c->mSendPacketPool.pop();
-		c->mLastSendPacket = p;
+		//TODO: 이거 위치 옮기자
+		c->SetLastSendPacket(p);
 		mNetwork->SendData(p);
 	}
 }

@@ -140,11 +140,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="ChatServer.cpp" />
+    <ClCompile Include="ClientInfo.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Network.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ChatServer.h" />
+    <ClInclude Include="ClientInfo.h" />
     <ClInclude Include="Define.h" />
     <ClInclude Include="Network.h" />
     <ClInclude Include="NetworkConfig.h" />

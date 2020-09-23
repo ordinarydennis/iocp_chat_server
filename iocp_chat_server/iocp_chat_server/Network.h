@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Define.h"
+#include "ClientInfo.h"
 #include <thread>
 #include <vector>
 #include <queue>
@@ -24,29 +25,40 @@ private:
     bool		mIsAccepterRun  = true;
     //접속 되어있는 클라이언트 수
     int			mClientCnt = 0;
-    std::thread	                mAccepterThread;
+    std::thread                 mAccepterThread;
     std::vector<std::thread>    mIOWorkerThreads;
-    std::vector<stClientInfo>   mClientInfos;
+    std::vector<ClientInfo>     mClientInfos;
  
-    std::queue<stClientInfo*>    mClientPoolRecvedPacket;
-    std::queue<stClientInfo*>    mClientPoolSendingPacket;
+    std::queue<ClientInfo*>     mClientPoolRecvedPacket;
+    std::queue<ClientInfo*>     mClientPoolSendingPacket;
+
+    std::mutex                  mRecvPacketLock;
+    std::mutex                  mSendPacketLock;
+
+    std::unique_ptr<stOverlappedEx> mAcceptOverlappedEx = std::make_unique<stOverlappedEx>();
   
 private:
-    void CreateSocket();
+    void CreateListenSocket();
     void BindandListen();
     void CreateIOCP();
     void CreateClient(const UINT32 maxClientCount);
 
     void SetWokerThread();
     void WokerThread();
-    bool SendMsg(stClientInfo * pClientInfo, char* pMsg, int nLen);
+    void ProcAcceptOperation(stOverlappedEx* pOverlappedEx);
+    void ProcRecvOperation(ClientInfo* pClientInfo, DWORD dwIoSize);
+    void ProcSendOperation(ClientInfo* pClientInfo, DWORD dwIoSize);
+    bool SendMsg(ClientInfo* pClientInfo, char* pMsg, UINT32 len);
     void SetAccepterThread();
     void AccepterThread();
-    void CloseSocket(stClientInfo* pClientInfo, bool bIsForce = false);
-    stClientInfo* GetEmptyClientInfo();
-    bool BindIOCompletionPort(stClientInfo * pClientInfo);
-    bool BindRecv(stClientInfo * pClientInfo);
+    void CloseSocket(ClientInfo* pClientInfo, bool bIsForce = false);
+    ClientInfo* GetEmptyClientInfo();
+    ClientInfo* GetClientInfo(UINT32 id);
+    bool BindIOCompletionPort(ClientInfo* pClientInfo);
+    bool BindRecv(ClientInfo* pClientInfo);
     void DestroyThread();
+    void AddToClientPoolRecvPacket(ClientInfo* c);
+    BOOL AsyncAccept(SOCKET listenSocket);
 
     // 6. 생성자/소멸자 선언
 public:
@@ -70,13 +82,13 @@ public:
     void Destroy();
 
     bool IsEmptyClientPoolRecvPacket();
-    stClientInfo* GetClientRecvedPacket();
+    ClientInfo* GetClientRecvedPacket();
     
     bool IsEmptyClientPoolSendPacket();
-    stClientInfo* GetClientSendingPacket();
+    ClientInfo* GetClientSendingPacket();
     
     void SendData(stPacket packet);
-    void AddToClientPoolSendPacket(stClientInfo* c);
+    void AddToClientPoolSendPacket(ClientInfo* c);
 
     // 10. getter/setter 멤버함수들 선언
 public:

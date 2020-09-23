@@ -39,6 +39,7 @@ enum class PacketID : UINT16
 };
 enum class IOOperation
 {
+	ACCEPT,
 	RECV,
 	SEND
 };
@@ -46,10 +47,11 @@ enum class IOOperation
 //WSAOVERLAPPED구조체를 확장 시켜서 필요한 정보를 더 넣었다.
 struct stOverlappedEx
 {
-	WSAOVERLAPPED m_wsaOverlapped;		
-	SOCKET		m_socketClient;			
+	WSAOVERLAPPED m_wsaOverlapped;			//구조체의 가장 첫번째로 와야 한다. 제대로 데이터를 받을 수 있다.	
 	WSABUF		m_wsaBuf;				
 	IOOperation m_eOperation;		
+	char		m_buffer[MAX_SOCKBUF];		//비동기 accept에서 데이터 받아올때 필요하다.
+	SOCKET		m_clientSocket;				//비동기 accept에서 데이터 받아올때 필요하다.
 };
 
 struct stPacketHeader
@@ -79,32 +81,5 @@ struct stPacket
 		mHeader = Header;
 		ZeroMemory(&mBody, MAX_SOCKBUF);
 		memcpy_s(mBody, size, Body, size);
-	}
-};
-
-struct stClientInfo
-{
-	INT32			mId = 0;
-	//TODO: 변수명 통일
-	SOCKET			m_socketClient;
-	stOverlappedEx	m_stRecvOverlappedEx;
-	stOverlappedEx	m_stSendOverlappedEx;
-
-	std::queue<stPacket>        mRecvPacketPool;
-	std::queue<stPacket>        mSendPacketPool;
-
-	stPacket					mLastSendPacket;
-
-	char			mRecvBuf[MAX_SOCKBUF] = {0,};
-	char			mSendBuf[MAX_SOCKBUF] = {0,};
-
-	bool			m_bSending = false;
-
-	stClientInfo(INT32 id)
-	{
-		mId = id;
-		ZeroMemory(&m_stRecvOverlappedEx, sizeof(stOverlappedEx));
-		ZeroMemory(&m_stSendOverlappedEx, sizeof(stOverlappedEx));
-		m_socketClient = INVALID_SOCKET;
 	}
 };
