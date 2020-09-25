@@ -34,6 +34,7 @@ public:
 
 private:
 	INT32						mId = 0;
+	//TODO: stOverlappedEx에 있는걸로 대체하기
 	SOCKET						mClientSocket = INVALID_SOCKET;
 	stOverlappedEx				m_stRecvOverlappedEx;
 	stOverlappedEx				m_stSendOverlappedEx;
@@ -46,9 +47,9 @@ private:
 
 	stPacket					mLastSendPacket;
 
+	//TODO: stOverlappedEx에 있는걸로 대체하기
 	char						mRecvBuf[MAX_SOCKBUF] = { 0, };
 	char						mSendBuf[MAX_SOCKBUF] = { 0, };
 
 	bool						m_bSending = false;
 };
-

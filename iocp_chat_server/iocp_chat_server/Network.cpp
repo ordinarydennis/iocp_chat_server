@@ -1,23 +1,22 @@
 #pragma comment(lib, "Ws2_32.lib")	//AcceptEx
 #pragma comment(lib, "mswsock.lib") //AcceptEx
 
-#include <winsock2.h>
-#include <windows.h>
-#include <mswsock.h>
-#include <mswsock.h>
 #include "Network.h"
 #include "Define.h"
 #include "NetworkConfig.h"
 
+#include <winsock2.h>
+#include <windows.h>
+#include <mswsock.h>
 #include <iostream>
 #include <string>
 
-void Network::Init()
+void Network::Init(UINT16 SERVER_PORT)
 {
 	CreateListenSocket();
 	CreateIOCP();
 	CreateClient(MAX_CLIENT);
-	BindandListen();
+	BindandListen(SERVER_PORT);
 	
 }
 //소켓을 초기화하는 함수
@@ -40,7 +39,7 @@ void Network::CreateListenSocket()
 		return;
 	}
 }
-void Network::BindandListen()
+void Network::BindandListen(UINT16 SERVER_PORT)
 {
 	SOCKADDR_IN		stServerAddr;
 	stServerAddr.sin_family = AF_INET;
@@ -210,8 +209,6 @@ void Network::ProcAcceptOperation(stOverlappedEx* pOverlappedEx)
 }
 void Network::ProcRecvOperation(ClientInfo* pClientInfo, DWORD dwIoSize)
 {
-	// TODO: 이 코드 굳이 있어야 하는지?
-	pClientInfo->GetRecvBuf()[dwIoSize] = '\0';
 	//헤더파싱
 	stPacketHeader header;
 	memcpy_s(&header.mSize, sizeof(UINT16), pClientInfo->GetRecvBuf(), sizeof(UINT16));
@@ -464,21 +461,23 @@ void Network::AddToClientPoolSendPacket(ClientInfo* c)
 }
 void Network::SendData(stPacket packet)
 {
-	char* pMsg = packet.mBody;
-	int nLen = sizeof(packet.mBody);
+	//char* pMsg = packet.mBody;
+	//int nLen = sizeof(packet.mBody);
 	UINT16 packetId = packet.mHeader.mPacket_id;
 
 	char buff[MAX_SOCKBUF] = { 0, };
 
 	//헤더 정보 채워서 보낸다.
 	stPacketHeader header;
-	header.mSize = static_cast<UINT16>(strlen(pMsg) + PACKET_HEADER_SIZE);
+	//header.mSize = static_cast<UINT16>(strlen(pMsg) + PACKET_HEADER_SIZE);
+	header.mSize = packet.mHeader.mSize;
 	// TODO: 여기 수정 해야함!
 	header.mPacket_id = packetId;
 	memcpy_s(buff, sizeof(stPacketHeader), &header, sizeof(stPacketHeader));
 
-	UINT32 bodySize = strlen(pMsg);
-	memcpy_s(&buff[PACKET_HEADER_SIZE], bodySize, pMsg, bodySize);
+	//UINT32 bodySize = strlen(pMsg);
+	UINT32 bodySize = packet.mHeader.mSize - PACKET_HEADER_SIZE;
+	memcpy_s(&buff[PACKET_HEADER_SIZE], bodySize, packet.mBody, bodySize);
 
 	ClientInfo* c = GetClientInfo(packet.mClientTo);
 	SendMsg(c, buff, header.mSize);

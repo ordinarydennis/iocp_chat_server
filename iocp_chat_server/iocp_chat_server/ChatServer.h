@@ -1,59 +1,54 @@
 #pragma once
 
-#include "Define.h"
 #include <vector>
 #include <thread>
 #include <memory>
+#include <unordered_map>
+#include "Define.h"
 #include "Network.h"
+#include "Redis.h"
 
 class ChatServer
 {
-    // 1. 필요시 static_assert
+public:
+    ChatServer() = default;
+    ~ChatServer() { WSACleanup(); };
+    //ChatServer(const ChatServer&) = delete;
+    //ChatServer(ChatServer&&) = delete;
+    //ChatServer& operator=(const ChatServer&) = delete;
+    //ChatServer& operator=(ChatServer&&) = delete;
 
-    // 2. 매크로 집단
-
-    // 3. friend 클래스가 있다면 선언
-
-    // 4. 해당 class에 종속적인 타입별칭이 필요하다면, 변수 선언에 앞서 미리 정의
-
-    // 5. 멤버변수 선언
-private:
-    std::thread	                mReceivePacketThread;
-    //std::thread	                mSendPacketThread;
-    std::vector<std::thread>    mSendPacketThreads;
-    bool                        mReceivePacketRun = true;
-    bool                        mSendPacketRun = true;
-    std::unique_ptr<Network>    mNetwork;
+    void Init();
+    void Run();
+    void Destroy();
 
 private:
+    void SetRedisResponseThread();
+    void RedisResponseThread();
     void SetReceivePacketThread();
     void ReceivePacketThread();
     void SetSendPacketThread();
     void SendPacketThread();
     void Waiting();
 
-    // 6. 생성자/소멸자 선언
-public:
-    ChatServer() = default;
-    ~ChatServer() { WSACleanup(); };
-    ChatServer(const ChatServer&) = delete;
-    ChatServer(ChatServer&&) = delete;
-    ChatServer& operator=(const ChatServer&) = delete;
-    ChatServer& operator=(ChatServer&&) = delete;
+    //프로시저
+    void RegisterRecvProc();
+    void ProcessPacket(stPacket packet);
+    void ProcEcho(stPacket packet);
+    void ProcLogin(stPacket packet);
+    void ProcRoonEnter(stPacket packet);
 
-    // 7. 정적 멤버함수들 선언
-public:
+private:
+    std::thread	                mRedisResponseThread;
+    std::thread	                mReceivePacketThread;
+    std::vector<std::thread>    mSendPacketThreads;
+    bool                        mRedisResponseRun = true;
+    bool                        mReceivePacketRun = true;
+    bool                        mSendPacketRun = true;
+    std::unique_ptr<Network>    mNetwork;
 
-    // 8. 가상 멤버함수들 선언
-public:
+    using receiver = void(ChatServer::*)(stPacket p);
+    std::unordered_map<PacketID, receiver> mRecvPacketProcDict;
 
-    // 9. 일반 멤버함수들 선언
-public:
-    void Init();
-    void Run();
-    void Destroy();
-
-    // 10. getter/setter 멤버함수들 선언
-public:
-
+    std::unique_ptr<Redis>    mRedis;
 };

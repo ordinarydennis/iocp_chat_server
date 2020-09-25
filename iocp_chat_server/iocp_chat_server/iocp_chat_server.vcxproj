@@ -72,12 +72,16 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>C:\Users\junyoungoh\Desktop\git\iocp_chat_server\iocp_chat_server\thirdparty\hiredis;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\junyoungoh\Desktop\git\iocp_chat_server\iocp_chat_server\thirdparty\hiredis\VS-IDE\Debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>C:\Users\junyoungoh\Desktop\git\iocp_chat_server\iocp_chat_server\thirdparty\hiredis;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\junyoungoh\Desktop\git\iocp_chat_server\iocp_chat_server\thirdparty\hiredis\VS-IDE\Debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
@@ -143,6 +147,8 @@
     <ClCompile Include="ClientInfo.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Network.cpp" />
+    <ClCompile Include="Redis.cpp" />
+    <ClCompile Include="RedisTask.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ChatServer.h" />
@@ -150,6 +156,12 @@
     <ClInclude Include="Define.h" />
     <ClInclude Include="Network.h" />
     <ClInclude Include="NetworkConfig.h" />
+    <ClInclude Include="Packet.h" />
+    <ClInclude Include="Redis.h" />
+    <ClInclude Include="RedisConfig.h" />
+    <ClInclude Include="RedisDefine.h" />
+    <ClInclude Include="RedisPacket.h" />
+    <ClInclude Include="RedisTask.h" />
     <ClInclude Include="ServerConfig.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

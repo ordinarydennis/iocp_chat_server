@@ -3,7 +3,6 @@
 #include <winsock2.h>
 #include <Ws2tcpip.h>
 #include <queue>
-#include "ServerConfig.h"
 #include "NetworkConfig.h"
 
 enum class Error
@@ -14,6 +13,12 @@ enum class Error
     SOCKET_BIND,
     SOCKET_LISTEN,
 	IOCP_CREATE,
+};
+
+enum class ERROR_CODE : UINT16
+{
+	NONE = 0,
+	LOGIN_USER_INVALID_PW = 33,
 };
 
 enum class PacketID : UINT16
@@ -60,7 +65,7 @@ struct stPacketHeader
 	UINT16			mPacket_id = 0;
 };
 
-#define PACKET_HEADER_SIZE sizeof(stPacketHeader) + 1
+const UINT16 PACKET_HEADER_SIZE = sizeof(stPacketHeader) + 1;
 
 struct stPacket
 {
