@@ -13,7 +13,7 @@ public:
 	SOCKET			GetClientSocket() { return mClientSocket; }
 	stPacket		GetRecvPacket();
 	stPacket		GetSendPacket();
-	bool			IsSending() { return m_bSending; };
+	bool			IsSending();
 	
 	char*			GetRecvBuf() { return mRecvBuf; };
 	char*			GetSendBuf() { return mSendBuf; };
@@ -53,4 +53,5 @@ private:
 	char						mSendBuf[MAX_SOCKBUF] = { 0, };
 
 	bool						m_bSending = false;
+	std::mutex                  mSendingLock;
 };

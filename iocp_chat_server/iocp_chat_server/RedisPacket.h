@@ -5,8 +5,6 @@
 #include "Packet.h"
 #include "Define.h"
 
-//TODO: 헤더 정리하기!!!!
-
 class LoginReqRedisPacket
 {
 public:

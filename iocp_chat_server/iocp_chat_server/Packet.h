@@ -23,15 +23,15 @@ private:
 	char mUserPw[MAX_USER_PW_BYTE_LENGTH] = { 0, };
 };
 
-class LoginResPacket
-{
-public:
-	void SetResult(ERROR_CODE result) { mResult = result; };
-	ERROR_CODE GetResult() { return mResult; };
-
-private:
-	ERROR_CODE mResult;
-};
+//class LoginResPacket
+//{
+//public:
+//	void SetResult(ERROR_CODE result) { mResult = result; };
+//	ERROR_CODE GetResult() { return mResult; };
+//
+//private:
+//	ERROR_CODE mResult;
+//};
 
 class RoomEnterReqPacket
 {
@@ -45,34 +45,34 @@ private:
 	UINT32 mRoomNumber = 0;
 };
 
-class RoomEnterResPacket
-{
-public:
-	void SetResult(ERROR_CODE result) { mResult = result; };
-	ERROR_CODE GetResult() { return mResult; };
+//class RoomEnterResPacket
+//{
+//public:
+//	void SetResult(ERROR_CODE result) { mResult = result; };
+//	ERROR_CODE GetResult() { return mResult; };
+//
+//private:
+//	ERROR_CODE mResult;
+//};
 
-private:
-	ERROR_CODE mResult;
-};
+//class RoomChatReqPacket
+//{
+//public:
+//	RoomChatReqPacket(const char* buf)
+//	{
+//		memcpy_s(&chat, strlen(buf), buf, strlen(buf));
+//	}
+//	const char* GetChat() const { return chat; };
+//private:
+//	char chat[MAX_CHAT_MSG_SIZE] = { 0, };
+//};
 
-class RoomChatReqPacket
-{
-public:
-	RoomChatReqPacket(const char* buf)
-	{
-		memcpy_s(&chat, strlen(buf), buf, strlen(buf));
-	}
-	const char* GetChat() const { return chat; };
-private:
-	char chat[MAX_CHAT_MSG_SIZE] = { 0, };
-};
-
-class RoomChatResPacket
-{
-public:
-	void SetResult(ERROR_CODE result) { mResult = result; };
-	ERROR_CODE GetResult() { return mResult; };
-
-private:
-	ERROR_CODE mResult;
-};
+//class RoomChatResPacket
+//{
+//public:
+//	void SetResult(ERROR_CODE result) { mResult = result; };
+//	ERROR_CODE GetResult() { return mResult; };
+//
+//private:
+//	ERROR_CODE mResult;
+//};

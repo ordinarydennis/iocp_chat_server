@@ -24,8 +24,14 @@ void ClientInfo::SetSendOverlappedEx(const stOverlappedEx& overlappedEx)
 {
 	m_stSendOverlappedEx = overlappedEx;
 }
+bool ClientInfo::IsSending()
+{
+	std::lock_guard<std::mutex> guard(mSendingLock);
+	return m_bSending;
+}
 void ClientInfo::SetSending(bool bSending)
 {
+	std::lock_guard<std::mutex> guard(mSendingLock);
 	m_bSending = bSending;
 }
 void ClientInfo::SendMgs(char* mgs)

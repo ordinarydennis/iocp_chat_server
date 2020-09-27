@@ -3,6 +3,7 @@
 #include "ChatUser.h"
 #include <basetsd.h>
 #include <unordered_map>
+#include <mutex>
 
 class ChatUserManager
 {
@@ -17,5 +18,6 @@ public:
 
 private:
 	std::unordered_map<UINT32, ChatUser>	mChatUserDict;
+	std::mutex								mChatUserDictLock;
 };
 

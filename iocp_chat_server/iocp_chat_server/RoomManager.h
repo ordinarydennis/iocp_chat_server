@@ -3,6 +3,7 @@
 #include "Room.h"
 #include <basetsd.h>
 #include <unordered_map>
+#include <mutex>
 
 class RoomManager
 {
@@ -17,6 +18,7 @@ public:
 
 private:
 	std::unordered_map<UINT32, Room>	mRoomDict;
+	std::mutex							mRoomDictLock;
 	UINT32								mRoomCount = 0;
 };
 

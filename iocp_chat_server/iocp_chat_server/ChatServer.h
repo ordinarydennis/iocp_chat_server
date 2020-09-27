@@ -33,7 +33,7 @@ private:
     void SetSendPacketThread();
     void SendPacketThread();
     void Waiting();
-
+    void SendPacket(UINT32 from, UINT32 to, UINT16 packetId, char* body, size_t bodySize);
     //프로시저
     void RegisterRecvProc();
     void ProcessPacket(stPacket packet);
@@ -57,7 +57,6 @@ private:
     std::unordered_map<PacketID, receiver> mRecvPacketProcDict;
 
     std::unique_ptr<Redis>      mRedis;
-    //TODO : unique ptr
     RoomManager                 mRoomManager;
     ChatUserManager             mChatUserManager;
 };

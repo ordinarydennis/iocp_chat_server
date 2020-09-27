@@ -10,6 +10,7 @@ ChatUserManager::~ChatUserManager()
 }
 ChatUser* ChatUserManager::GetUser(const UINT32 userId)
 {
+	std::lock_guard<std::mutex> guard(mChatUserDictLock);
 	auto item = mChatUserDict.find(userId);
 	bool isExist =  (item != mChatUserDict.end()) ? true : false;
 
@@ -22,5 +23,6 @@ ChatUser* ChatUserManager::GetUser(const UINT32 userId)
 }
 void ChatUserManager::AddUser(const ChatUser& chatUser)
 {
+	std::lock_guard<std::mutex> guard(mChatUserDictLock);
 	mChatUserDict[chatUser.GetClientInfo()->GetId()] = chatUser;
 }

@@ -55,6 +55,7 @@ private:
     BOOL AsyncAccept(SOCKET listenSocket);
 
 private:
+    UINT16      mMaxThreadCount = 0;
     SOCKET      mListenSocket   = INVALID_SOCKET;
     HANDLE		mIOCPHandle     = INVALID_HANDLE_VALUE;
     bool		mIsWorkerRun    = true;

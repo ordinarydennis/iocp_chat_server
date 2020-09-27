@@ -12,6 +12,7 @@
 
 void Network::Init(UINT16 SERVER_PORT)
 {
+	mMaxThreadCount = std::thread::hardware_concurrency() * 2 + 1;
 	CreateListenSocket();
 	CreateIOCP();
 	CreateClient(MAX_CLIENT);
@@ -74,7 +75,7 @@ void Network::BindandListen(UINT16 SERVER_PORT)
 }
 void Network::CreateIOCP()
 {
-	mIOCPHandle = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, NULL, MAX_WORKERTHREAD);
+	mIOCPHandle = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, NULL, mMaxThreadCount);
 	if (NULL == mIOCPHandle)
 	{
 		printf("[에러] CreateIoCompletionPort()함수 실패: %d\n", GetLastError());
@@ -97,7 +98,7 @@ void Network::Run()
 void Network::SetWokerThread()
 {
 	//WaingThread Queue에 대기 상태로 넣을 쓰레드들 생성 권장되는 개수 : (cpu개수 * 2) + 1 
-	for (int i = 0; i < MAX_WORKERTHREAD; i++)
+	for (int i = 0; i < mMaxThreadCount; i++)
 	{
 		mIOWorkerThreads.emplace_back([this]() { WokerThread(); });
 	}
