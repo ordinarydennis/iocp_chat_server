@@ -72,19 +72,23 @@ struct stPacket
 	UINT32			mClientFrom = 0;
 	UINT32			mClientTo = 0;
 	stPacketHeader	mHeader;
-	char			mBody[MAX_SOCKBUF];
+	char			mBody[MAX_SOCKBUF] = { 0, };
 
 	stPacket()
 	{
 		ZeroMemory(&mBody, MAX_SOCKBUF);
 	};
 
-	stPacket(UINT32 ClientFrom, UINT32 ClientTo, stPacketHeader Header, const char* Body, UINT16 size)
+	stPacket(UINT32 ClientFrom, UINT32 ClientTo, stPacketHeader Header, const char* Body, size_t size)
 	{
 		mClientFrom = ClientFrom;
 		mClientTo = ClientTo;
 		mHeader = Header;
-		ZeroMemory(&mBody, MAX_SOCKBUF);
 		memcpy_s(mBody, size, Body, size);
+	}
+
+	size_t GetBodySize()
+	{
+		return mHeader.mSize - PACKET_HEADER_SIZE;
 	}
 };

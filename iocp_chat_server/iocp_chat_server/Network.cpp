@@ -4,7 +4,6 @@
 #include "Network.h"
 #include "Define.h"
 #include "NetworkConfig.h"
-
 #include <winsock2.h>
 #include <windows.h>
 #include <mswsock.h>
@@ -84,9 +83,10 @@ void Network::CreateIOCP()
 }
 void Network::CreateClient(const UINT32 maxClientCount)
 {
-	for (UINT32 i = 0; i < maxClientCount; ++i)
+	for (UINT32 i = 0; i < maxClientCount; i++)
 	{
 		mClientInfos.emplace_back(i);
+		mClientInfos[i].SetId(i);
 	}
 }
 void Network::Run()
@@ -152,7 +152,8 @@ void Network::WokerThread()
 		}
 		else if (IOOperation::SEND == pOverlappedEx->m_eOperation)
 		{
-			ProcSendOperation(pClientInfo, dwIoSize);
+			//패킷 순서 확인
+			//ProcSendOperation(pClientInfo, dwIoSize);
 		}
 		//예외
 		else

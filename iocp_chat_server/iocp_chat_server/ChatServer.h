@@ -1,12 +1,15 @@
 #pragma once
 
+#include "Define.h"
+#include "Network.h"
+#include "Redis.h"
+#include "RoomManager.h"
+#include "ChatUserManager.h"
+
 #include <vector>
 #include <thread>
 #include <memory>
 #include <unordered_map>
-#include "Define.h"
-#include "Network.h"
-#include "Redis.h"
 
 class ChatServer
 {
@@ -36,7 +39,9 @@ private:
     void ProcessPacket(stPacket packet);
     void ProcEcho(stPacket packet);
     void ProcLogin(stPacket packet);
-    void ProcRoonEnter(stPacket packet);
+    void ProcRoomEnter(stPacket packet);
+    void ProcRoomChat(stPacket packet);
+
 
 private:
     std::thread	                mRedisResponseThread;
@@ -50,5 +55,8 @@ private:
     using receiver = void(ChatServer::*)(stPacket p);
     std::unordered_map<PacketID, receiver> mRecvPacketProcDict;
 
-    std::unique_ptr<Redis>    mRedis;
+    std::unique_ptr<Redis>      mRedis;
+    //TODO : unique ptr
+    RoomManager                 mRoomManager;
+    ChatUserManager             mChatUserManager;
 };

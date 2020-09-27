@@ -5,6 +5,7 @@
 //Define.h 에서 winsock2 를 include CRedisConn.h 에서 winsock를 include 하기 때문에
 //중복 선언 에러 발생
 #include "../thirdparty/CRedisConn.h"
+#include <sstream>
 
 
 Redis::Redis()
@@ -51,17 +52,34 @@ void Redis::RedisThread()
 			ERROR_CODE error_code = ERROR_CODE::LOGIN_USER_INVALID_PW;
 
 			LoginReqRedisPacket reqPacket(reqTask);
-			std::string value;
-			if (mConn->get(reqPacket.GetUserIdstr(), value))
+
+			std::string pw;
+			if (mConn->get(reqPacket.GetUserId(), pw))
 			{
-				if (value.compare(reqPacket.GetUserPw()) == 0)
+				if (pw.compare(reqPacket.GetUserPw()) == 0)
 				{
 					error_code = ERROR_CODE::NONE;
 				}
+
+				if (ERROR_CODE::NONE == error_code)
+				{
+					const size_t bufSize = MAX_USER_ID_BYTE_LENGTH + sizeof(ERROR_CODE);
+					char buf[bufSize] = { 0, };
+					memcpy_s(buf, strlen(reqPacket.GetUserId()), reqPacket.GetUserId(), strlen(reqPacket.GetUserId()));
+					memcpy_s(&buf[MAX_USER_ID_BYTE_LENGTH], sizeof(error_code), &error_code, sizeof(error_code));
+					LoginResRedisPacket resPacket(reqPacket.GetClientId(), REDIS_TASK_ID::RESPONSE_LOGIN, buf, bufSize);
+					ResponseTask(resPacket.GetTask());
+				}
+				else
+				{
+					const size_t bufSize = MAX_USER_ID_BYTE_LENGTH + sizeof(ERROR_CODE);
+					char buf[bufSize] = { 0, };
+					memcpy_s(&buf[MAX_USER_ID_BYTE_LENGTH], sizeof(error_code), &error_code, sizeof(error_code));
+					LoginResRedisPacket resPacket(reqPacket.GetClientId(), REDIS_TASK_ID::RESPONSE_LOGIN, buf, bufSize);
+					ResponseTask(resPacket.GetTask());
+				}
 			}
 
-			LoginResRedisPacket resPacket(reqPacket.GetUserId(), REDIS_TASK_ID::RESPONSE_LOGIN, reinterpret_cast<char*>(&error_code), sizeof(error_code));
-			ResponseTask(resPacket.GetTask());
 		}
 	}
 }

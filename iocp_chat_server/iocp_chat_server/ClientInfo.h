@@ -9,7 +9,7 @@ public:
 	ClientInfo(const ClientInfo&);
 	ClientInfo(INT32 id);
 	
-	INT32			GetId() { return mId;  };
+	INT32			GetId() const { return mId;  };
 	SOCKET			GetClientSocket() { return mClientSocket; }
 	stPacket		GetRecvPacket();
 	stPacket		GetSendPacket();
@@ -31,6 +31,7 @@ public:
 	void			SetRecvOverlappedEx(stOverlappedEx overlappedEx);
 	void			SetSendOverlappedEx(const stOverlappedEx& overlappedEx);
 	void			SetSending(bool bSending);
+	void			SendMgs(char* mgs);
 
 private:
 	INT32						mId = 0;

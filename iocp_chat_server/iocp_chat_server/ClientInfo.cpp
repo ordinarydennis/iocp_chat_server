@@ -2,6 +2,7 @@
 
 ClientInfo::ClientInfo(const ClientInfo& c)
 {
+	mId = c.mId;
 	ZeroMemory(&m_stRecvOverlappedEx, sizeof(stOverlappedEx));
 	ZeroMemory(&m_stSendOverlappedEx, sizeof(stOverlappedEx));
 }
@@ -26,6 +27,11 @@ void ClientInfo::SetSendOverlappedEx(const stOverlappedEx& overlappedEx)
 void ClientInfo::SetSending(bool bSending)
 {
 	m_bSending = bSending;
+}
+void ClientInfo::SendMgs(char* mgs)
+{
+	stPacket p;
+
 }
 void ClientInfo::SetLastSendPacket(const stPacket& packet)
 {
