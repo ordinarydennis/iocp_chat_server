@@ -8,4 +8,8 @@ void Room::AddUser(ChatUser* chatUser)
 {
 	mUserList.push_back(chatUser);
 }
+void Room::RemoveUser(ChatUser* chatUser)
+{
+	mUserList.remove(chatUser);
+}
 

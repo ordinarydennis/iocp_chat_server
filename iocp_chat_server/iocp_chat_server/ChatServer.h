@@ -41,6 +41,7 @@ private:
     void ProcLogin(stPacket packet);
     void ProcRoomEnter(stPacket packet);
     void ProcRoomChat(stPacket packet);
+    void ProcRoomLeave(stPacket packet);
 
 
 private:

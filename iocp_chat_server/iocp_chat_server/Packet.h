@@ -76,18 +76,3 @@ public:
 private:
 	ERROR_CODE mResult;
 };
-
-class RoomChatNotifyPacket
-{
-public:
-	void SetUserId(char* userId) 
-	{
-		//mUserid = userId; 
-	};
-	const char* GetUserId() { return mUserId; };
-	const char* GetMsg() { return mMsg; };
-
-private:
-	char mUserId[MAX_USER_ID_BYTE_LENGTH] = { 0, };
-	char mMsg[MAX_CHAT_MSG_SIZE] = { 0, };
-};

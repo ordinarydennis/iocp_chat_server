@@ -12,9 +12,10 @@ public:
 	std::list<ChatUser*>* GetUserList() { return &mUserList; };
 	void SetRoomNumber(UINT32 roomNumber);
 	void AddUser(ChatUser* chatUser);
+	void RemoveUser(ChatUser* chatUser);
 
 private:
-	UINT32					mRoomNumber = 0;
+	UINT32						mRoomNumber = 0;
 	std::list<ChatUser*>		mUserList;
 };
 

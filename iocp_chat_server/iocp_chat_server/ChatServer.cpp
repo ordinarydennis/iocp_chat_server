@@ -25,6 +25,7 @@ void ChatServer::RegisterRecvProc()
 	mRecvPacketProcDict[PacketID::LOGIN_REQ] = &ChatServer::ProcLogin;
 	mRecvPacketProcDict[PacketID::ROOM_ENTER_REQ] = &ChatServer::ProcRoomEnter;
 	mRecvPacketProcDict[PacketID::ROOM_CHAT_REQ] = &ChatServer::ProcRoomChat;
+	mRecvPacketProcDict[PacketID::ROOM_LEAVE_REQ] = &ChatServer::ProcRoomLeave;
 }
 void ChatServer::ProcEcho(stPacket packet)
 {
@@ -68,7 +69,6 @@ void ChatServer::ProcRoomEnter(stPacket packet)
 	ChatUser* chatUser = mChatUserManager.GetUser(packet.mClientFrom);
 	
 	//이미 존재 하는 유저이면 실패
-	
 	chatUser->SetRoom(mRoomManager.GetRoom(roomNumber));
 	mRoomManager.EnterRoom(roomNumber, chatUser);
 
@@ -93,9 +93,39 @@ void ChatServer::ProcRoomEnter(stPacket packet)
 		bodySize
 	);
 
-	ClientInfo* clientInfo = mNetwork->GetClientInfo(packet.mClientFrom);
-	clientInfo->AddSendPacket(chatPacket);
-	mNetwork->AddToClientPoolSendPacket(clientInfo);
+
+	chatUser->GetClientInfo()->AddSendPacket(chatPacket);
+	mNetwork->AddToClientPoolSendPacket(chatUser->GetClientInfo());
+
+	Room* room = mRoomManager.GetRoom(roomNumber);
+
+	auto  userList = room->GetUserList();
+	for (auto user : *userList)
+	{
+		UINT64 userUniqueId = chatUser->GetClientId();
+		const size_t userUniqueIdSize = sizeof(userUniqueId);
+		const size_t bodySize = userUniqueIdSize + MAX_USER_ID_BYTE_LENGTH;
+		
+		char body[bodySize] = { 0, };
+		size_t idLen = chatUser->GetUserId().length();
+		memcpy_s(body, userUniqueIdSize, &userUniqueId, userUniqueIdSize);
+		memcpy_s(&body[userUniqueIdSize], 1, &idLen, 1);
+		memcpy_s(&body[userUniqueIdSize + 1], chatUser->GetUserId().length(), chatUser->GetUserId().c_str(), chatUser->GetUserId().length());
+
+		stPacketHeader Header;
+		Header.mPacket_id = static_cast<UINT16>(PacketID::ROOM_NEW_USER_NTF);
+		Header.mSize = static_cast<UINT16>(bodySize + PACKET_HEADER_SIZE);
+		stPacket chatPacket(	
+			packet.mClientFrom,
+			user->GetClientId(),
+			Header,
+			body,
+			bodySize
+		);
+
+		user->GetClientInfo()->AddSendPacket(chatPacket);
+		mNetwork->AddToClientPoolSendPacket(user->GetClientInfo());
+	}
 }
 void ChatServer::ProcRoomChat(stPacket packet)
 {
@@ -142,6 +172,65 @@ void ChatServer::ProcRoomChat(stPacket packet)
 
 		stPacketHeader Header;
 		Header.mPacket_id = static_cast<UINT16>(PacketID::ROOM_CHAT_NOTIFY);
+		Header.mSize = static_cast<UINT16>(bodySize + PACKET_HEADER_SIZE);
+		stPacket chatPacket(
+			packet.mClientFrom,
+			user->GetClientId(),
+			Header,
+			body,
+			bodySize
+		);
+
+		user->GetClientInfo()->AddSendPacket(chatPacket);
+		mNetwork->AddToClientPoolSendPacket(user->GetClientInfo());
+	}
+}
+void ChatServer::ProcRoomLeave(stPacket packet)
+{
+	ChatUser* chatUser = mChatUserManager.GetUser(packet.mClientFrom);
+
+	Room* room = chatUser->GetRoom();
+	if (nullptr == room)
+	{
+		return;
+	}
+
+	room->RemoveUser(chatUser);
+
+	stPacketHeader Header;
+	Header.mPacket_id = static_cast<UINT16>(PacketID::ROOM_LEAVE_RES);
+
+	RoomChatResPacket resPacket;
+	resPacket.SetResult(ERROR_CODE::NONE);
+	ERROR_CODE result = resPacket.GetResult();
+	size_t bodySize = sizeof(result);
+	Header.mSize = static_cast<UINT16>(bodySize + PACKET_HEADER_SIZE);
+
+	//TODO: 128 수정
+	char body[128] = { 0, };
+	memcpy_s(body, bodySize, &result, bodySize);
+
+	stPacket chatPacket(
+		packet.mClientFrom,
+		packet.mClientFrom,
+		Header,
+		body,
+		bodySize
+	);
+
+	chatUser->GetClientInfo()->AddSendPacket(chatPacket);
+	mNetwork->AddToClientPoolSendPacket(chatUser->GetClientInfo());
+
+	auto userList = room->GetUserList();
+	for (auto user : *userList)
+	{
+		UINT64 userUniqueId = chatUser->GetClientId();
+		const size_t bodySize  = sizeof(userUniqueId);
+		char body[bodySize] = { 0, };
+		memcpy_s(body, bodySize, &userUniqueId, bodySize);
+
+		stPacketHeader Header;
+		Header.mPacket_id = static_cast<UINT16>(PacketID::ROOM_LEAVE_USER_NTF);
 		Header.mSize = static_cast<UINT16>(bodySize + PACKET_HEADER_SIZE);
 		stPacket chatPacket(
 			packet.mClientFrom,
