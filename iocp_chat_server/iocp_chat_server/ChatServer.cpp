@@ -258,9 +258,13 @@ void ChatServer::Run()
 {
 	mNetwork->Run();
 	mRedis->Run();
+	
+	//TODO 최흥배
+	// SetSendPacketThread 스레드는 Network 관련 스레드로 Network 레이어로 들어가야 합니다.
 	SetSendPacketThread();
 	SetReceivePacketThread();
 	SetSendPacketThread();
+	
 	SetRedisResponseThread();
 	Waiting();
 }
