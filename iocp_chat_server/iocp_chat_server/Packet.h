@@ -5,7 +5,7 @@
 
 const int MAX_USER_ID_BYTE_LENGTH = 33;
 const int MAX_USER_PW_BYTE_LENGTH = 33;
-const int MAX_CHAT_MSG_SIZE = 128;
+const int MAX_CHAT_MSG_SIZE = 257;
 
 class LoginReqPacket
 {

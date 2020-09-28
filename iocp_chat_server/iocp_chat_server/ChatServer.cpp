@@ -181,21 +181,6 @@ void ChatServer::ProcRoomLeave(stPacket packet)
 		return;
 	}
 
-	room->RemoveUser(chatUser);
-
-	ERROR_CODE result = ERROR_CODE::NONE;
-	const size_t bodySize = sizeof(result);
-	char body[bodySize] = { 0, };
-	memcpy_s(body, bodySize, &result, bodySize);
-
-	SendPacket(
-		packet.mClientFrom,
-		packet.mClientFrom,
-		static_cast<UINT16>(PacketID::ROOM_LEAVE_RES),
-		body,
-		bodySize
-	);
-
 	auto userList = room->GetUserList();
 	for (auto user : *userList)
 	{
@@ -212,6 +197,21 @@ void ChatServer::ProcRoomLeave(stPacket packet)
 			bodySize
 		);
 	}
+
+	room->RemoveUser(chatUser);
+
+	ERROR_CODE result = ERROR_CODE::NONE;
+	const size_t bodySize = sizeof(result);
+	char body[bodySize] = { 0, };
+	memcpy_s(body, bodySize, &result, bodySize);
+
+	SendPacket(
+		packet.mClientFrom,
+		packet.mClientFrom,
+		static_cast<UINT16>(PacketID::ROOM_LEAVE_RES),
+		body,
+		bodySize
+	);
 }
 void ChatServer::Run()
 {
