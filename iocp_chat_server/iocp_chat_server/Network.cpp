@@ -10,6 +10,15 @@
 #include <iostream>
 #include <string>
 
+//TODO 최흥배
+// 코드는 가독성 좋게 만드는 것이 정말 좋습니다. 
+// 불필요한 코드(주석 포함)는 지우고 함수 정의간에 간격을 두기 바랍니다.
+
+//TODO 최흥배
+// 코드 전체적으로 함수에서 실패 값을 반환하지 않고, 이것을 처리하는 코드가 없습니다.
+// 이 부분 보완 바랍니다
+
+
 void Network::Init(UINT16 SERVER_PORT)
 {
 	mMaxThreadCount = std::thread::hardware_concurrency() * 2 + 1;
@@ -19,6 +28,10 @@ void Network::Init(UINT16 SERVER_PORT)
 	BindandListen(SERVER_PORT);
 	
 }
+
+//TODO: 최흥배 
+// WSAStartup는 소켓 API의 초기화 함수라서 이 함수의 이름만으로는 이런 것이 있을거라고 생각하기 힘듭니다. 따로 분리하는 것이 좋을 것 같습니다.
+// 함수 내부에서 실패가 2개 이상입니다. 에러를 반환하고, 에러도 어떤 종류인지 외부에서 알 수 있게 bool 타입보다는 enum이 더 좋습니다.
 //소켓을 초기화하는 함수
 void Network::CreateListenSocket()
 {
@@ -39,6 +52,10 @@ void Network::CreateListenSocket()
 		return;
 	}
 }
+
+//TODO: 최흥배
+// 함수 이름과 달리 내부에서 IOCP 핸들에 등록도하고, Accept 함수 호출도 하고 있습니다. 분리하는 것이 좋습니다.
+// 실패와 성공이 있으면 결과를 반환해 주세요
 void Network::BindandListen(UINT16 SERVER_PORT)
 {
 	SOCKADDR_IN		stServerAddr;
@@ -67,12 +84,19 @@ void Network::BindandListen(UINT16 SERVER_PORT)
 	}
 
 	CreateIoCompletionPort((HANDLE)mListenSocket, mIOCPHandle, NULL, NULL);
+
+	//TODO: 최흥배
+	// 서버를 실행을 하자말자 많은 접속이 발생했을 때나 클라이언트 접속과 해제가 빈번한 경우를 잘 처리하기 위해 Accept를 최대 연결 수만큼 미리 요청할 수 있습니다.
+	// 현재는 1개만 accept를 요청을 했는데 최대 연결 가능 수만큼 미리 accept 하도록 합니다.
 	if (SOCKET_ERROR == AsyncAccept(mListenSocket))
 	{
 		printf("[에러] AsyncAccept()함수 실패 : %d", WSAGetLastError());
 		return;
 	}
 }
+
+//TODO: 최흥배
+// 실패와 성공이 있으면 결과를 반환해 주세요
 void Network::CreateIOCP()
 {
 	mIOCPHandle = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, NULL, mMaxThreadCount);
@@ -153,6 +177,8 @@ void Network::WokerThread()
 		}
 		else if (IOOperation::SEND == pOverlappedEx->m_eOperation)
 		{
+			//TODO 최흥배
+			// Send 완료 이벤트를 처리해야 하지 않나요?
 			//패킷 순서 확인
 			//ProcSendOperation(pClientInfo, dwIoSize);
 		}
@@ -209,6 +235,10 @@ void Network::ProcAcceptOperation(stOverlappedEx* pOverlappedEx)
 	//accept 다시 등록
 	AsyncAccept(mListenSocket);
 }
+
+//TODO 최흥배
+// 받은 데이터를 애플리케이션에서 정의한 패킷으로 나누는 것은 애플리케이션 레이어에서 하는 것이 좋습니다. 여기서 하면 이 라이브러리는 특정 애플리케이션에 종속 되어 버립니다.
+// 버그라고 할 수 있는데 패킷이 뭉쳐 왔을 때는 아래 방식으로 하면 더 이상 클라이언트의 요청을 처리하지 못하게 됩니다.
 void Network::ProcRecvOperation(ClientInfo* pClientInfo, DWORD dwIoSize)
 {
 	//헤더파싱
@@ -216,6 +246,9 @@ void Network::ProcRecvOperation(ClientInfo* pClientInfo, DWORD dwIoSize)
 	memcpy_s(&header.mSize, sizeof(UINT16), pClientInfo->GetRecvBuf(), sizeof(UINT16));
 	memcpy_s(&header.mPacket_id, sizeof(UINT16), &pClientInfo->GetRecvBuf()[2], sizeof(UINT16));
 
+	//TODO 최흥배
+	// 불필요하게 이중 복사를 합니다.
+	// stPacket 생성자에서도 또 복사를 하고 있네요
 	char body[MAX_SOCKBUF] = { 0, };
 	UINT32 bodySize = (UINT32)dwIoSize - PACKET_HEADER_SIZE;
 	memcpy_s(body, bodySize, &pClientInfo->GetRecvBuf()[PACKET_HEADER_SIZE], bodySize);
@@ -251,6 +284,8 @@ void Network::CloseSocket(ClientInfo* pClientInfo, bool bIsForce)
 		stLinger.l_onoff = 1;
 	}
 
+	//TODO 최흥배
+	// SO_LINGER로 바로 끊어버리므로 shutdown 안해도 괜찮습니다.
 	//socketClose소켓의 데이터 송수신을 모두 중단 시킨다.
 	shutdown(pClientInfo->GetClientSocket(), SD_BOTH);
 
@@ -374,6 +409,8 @@ void Network::AccepterThread()
 }
 ClientInfo* Network::GetEmptyClientInfo()
 {
+	//TODO 최흥배
+	// 클라이언트 수가 많을 때는 사용하지 않는 객체를 찾는 것도 좀 부담 될 수 있으므로 사용하지 않는 객체의 인덱스 번호만 관리하고 있으면 쉽고 빠르게 찾을 수 있을 것 같습니다.
 	for (auto& client : mClientInfos)
 	{
 		if (INVALID_SOCKET == client.GetClientSocket())
