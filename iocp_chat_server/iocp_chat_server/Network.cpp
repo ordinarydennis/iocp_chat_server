@@ -499,14 +499,13 @@ void Network::DestroyThread()
 		}
 	}
 
-	//Accepter 쓰레드를 종요한다.
-	mIsAccepterRun = false;
-	closesocket(mListenSocket);
+	//mIsAccepterRun = false;
+	//if (mAccepterThread.joinable())
+	//{
+	//	mAccepterThread.join();
+	//}
 
-	if (mAccepterThread.joinable())
-	{
-		mAccepterThread.join();
-	}
+	closesocket(mListenSocket);
 }
 void Network::Destroy()
 {

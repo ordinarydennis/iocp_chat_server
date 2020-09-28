@@ -83,9 +83,50 @@ void ChatServer::ProcRoomEnter(stPacket packet)
 		bodySize
 	);
 
-	//방 유저들에게 노티
 	Room* room = mRoomManager.GetRoom(roomNumber);
-	auto  userList = room->GetUserList();
+
+	//방 유저 리스트 내려주기
+	auto userList = room->GetUserList();
+	char userListBuf[MAX_SOCKBUF] = { 0, };
+	size_t userListBufSize = 0;
+	UINT16 userCount = userList->size() - 1;	//자기 자신은 카운트 하지 않음.
+	memcpy_s(userListBuf, 1, &userCount, 1);
+	userListBufSize++;
+	
+	for (auto user : *userList)
+	{
+		UINT64 userUniqueId = user->GetClientId();
+		if (packet.mClientFrom == userUniqueId)
+			continue;
+		
+		const size_t userUniqueIdSize = sizeof(userUniqueId);
+		const size_t bodySize = userUniqueIdSize + MAX_USER_ID_BYTE_LENGTH;
+
+		char body[bodySize] = { 0, };
+		size_t idLen = user->GetUserId().length();
+		memcpy_s(body, userUniqueIdSize, &userUniqueId, userUniqueIdSize);
+		memcpy_s(&body[userUniqueIdSize], 1, &idLen, 1);
+		memcpy_s(&body[userUniqueIdSize + 1], user->GetUserId().length(), user->GetUserId().c_str(), user->GetUserId().length());
+		
+		size_t userDataSize = userUniqueIdSize + 1 + user->GetUserId().length();
+		memcpy_s(&userListBuf[userListBufSize], userDataSize, body, userDataSize);
+		userListBufSize += userDataSize;
+	}
+
+	if (1 < userListBufSize)
+	{
+		SendPacket(
+			packet.mClientFrom,
+			packet.mClientFrom,
+			static_cast<UINT16>(PacketID::ROOM_USER_LIST_NTF),
+			userListBuf,
+			userListBufSize
+		);
+	}
+
+
+	//방 유저들에게 노티
+	//auto  userList = room->GetUserList();
 	for (auto user : *userList)
 	{
 		UINT64 userUniqueId = chatUser->GetClientId();
@@ -314,7 +355,7 @@ void ChatServer::ProcessPacket(stPacket p)
 }
 void ChatServer::SetSendPacketThread()
 {
-	for (int i = 0; i < 2; i++)
+	for (int i = 0; i < 1; i++)
 	{
 		mSendPacketThreads.emplace_back([this]() { SendPacketThread(); });
 	}
@@ -325,7 +366,7 @@ void ChatServer::SendPacketThread()
 	{
 		if (mNetwork->IsEmptyClientPoolSendPacket())
 		{
-			Sleep(50);
+			//Sleep(50);
 			continue;
 		}
 			
