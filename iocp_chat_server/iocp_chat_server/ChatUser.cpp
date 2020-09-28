@@ -1,9 +1,9 @@
 #include "ChatUser.h"
 #include "ClientInfo.h"
 
-ChatUser::ChatUser(std::string user_id, ClientInfo* clientInfo)
+ChatUser::ChatUser(std::string userId, ClientInfo* clientInfo)
 {
-	mUserId = user_id;
+	mUserId = userId;
 	mClientInfo = clientInfo;
 }
 ChatUser::~ChatUser()

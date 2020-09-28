@@ -6,43 +6,53 @@ ClientInfo::ClientInfo(const ClientInfo& c)
 	ZeroMemory(&m_stRecvOverlappedEx, sizeof(stOverlappedEx));
 	ZeroMemory(&m_stSendOverlappedEx, sizeof(stOverlappedEx));
 }
+
 ClientInfo::ClientInfo(INT32 id)
 	:mId(id)
 {
 	ZeroMemory(&m_stRecvOverlappedEx, sizeof(stOverlappedEx));
 	ZeroMemory(&m_stSendOverlappedEx, sizeof(stOverlappedEx));
 }
+
 void ClientInfo::SetClientSocket(SOCKET socketClient)
 { 
 	mClientSocket = socketClient;
 }
+
 void ClientInfo::SetRecvOverlappedEx(stOverlappedEx overlappedEx)
 {
 	m_stRecvOverlappedEx = overlappedEx;
 }
+
 void ClientInfo::SetSendOverlappedEx(const stOverlappedEx& overlappedEx)
 {
 	m_stSendOverlappedEx = overlappedEx;
 }
+
 bool ClientInfo::IsSending()
 {
 	std::lock_guard<std::mutex> guard(mSendingLock);
 	return m_bSending;
 }
+
 void ClientInfo::SetSending(bool bSending)
 {
 	std::lock_guard<std::mutex> guard(mSendingLock);
 	m_bSending = bSending;
 }
-void ClientInfo::SendMgs(char* mgs)
-{
-	stPacket p;
 
+stPacket ClientInfo::GetLastSendPacket()
+{
+	std::lock_guard<std::mutex> guard(mLastSendPacketLock);
+	return mLastSendPacket;
 }
+
 void ClientInfo::SetLastSendPacket(const stPacket& packet)
 {
+	std::lock_guard<std::mutex> guard(mLastSendPacketLock);
 	mLastSendPacket = packet;
 }
+
 stPacket ClientInfo::GetRecvPacket()
 {
 	std::lock_guard<std::mutex> guard(mRecvPacketPoolLock);
@@ -55,6 +65,7 @@ stPacket ClientInfo::GetRecvPacket()
 	mRecvPacketPool.pop();
 	return p;
 }
+
 stPacket ClientInfo::GetSendPacket()
 {
 	std::lock_guard<std::mutex> guard(mSendPacketPoolLock);
@@ -64,16 +75,23 @@ stPacket ClientInfo::GetSendPacket()
 	}
 
 	stPacket p = mSendPacketPool.front();
-	mSendPacketPool.pop();
+	mSendPacketPool.pop_front();
 	return p;
 }
+
 void ClientInfo::AddRecvPacket(stPacket p)
 {
 	std::lock_guard<std::mutex> guard(mRecvPacketPoolLock);
 	mRecvPacketPool.push(p);
 }
+
 void ClientInfo::AddSendPacket(stPacket p)
 {
 	std::lock_guard<std::mutex> guard(mSendPacketPoolLock);
-	mSendPacketPool.push(p);
+	mSendPacketPool.push_back(p);
+}
+void ClientInfo::AddSendPacketAtFront(stPacket p)
+{
+	std::lock_guard<std::mutex> guard(mSendPacketPoolLock);
+	mSendPacketPool.push_front(p);
 }

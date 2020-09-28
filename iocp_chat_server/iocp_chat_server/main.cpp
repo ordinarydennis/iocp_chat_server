@@ -4,7 +4,14 @@ int main()
 {
 	ChatServer chatServer;
 
-	chatServer.Init();
+	Error error = Error::NONE;
+	error = chatServer.Init();
+	if (Error::NONE != error)
+	{
+		printf("[ERROR] Error Number: %d, Get Last Error: %d\n", error, WSAGetLastError());
+		return static_cast<int>(error);
+	}
+
 	chatServer.Run();
 	chatServer.Destroy();
 

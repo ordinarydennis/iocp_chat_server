@@ -21,7 +21,7 @@ public:
     //ChatServer& operator=(const ChatServer&) = delete;
     //ChatServer& operator=(ChatServer&&) = delete;
 
-    void Init();
+    Error Init();
     void Run();
     void Destroy();
 
@@ -30,8 +30,8 @@ private:
     void RedisResponseThread();
     void SetReceivePacketThread();
     void ReceivePacketThread();
-    void SetSendPacketThread();
-    void SendPacketThread();
+    //void SetSendPacketThread();
+    //void SendPacketThread();
     void Waiting();
     void SendPacket(UINT32 from, UINT32 to, UINT16 packetId, char* body, size_t bodySize);
     //프로시저
@@ -47,10 +47,10 @@ private:
 private:
     std::thread	                mRedisResponseThread;
     std::thread	                mReceivePacketThread;
-    std::vector<std::thread>    mSendPacketThreads;
+    //std::vector<std::thread>    mSendPacketThreads;
     bool                        mRedisResponseRun = true;
     bool                        mReceivePacketRun = true;
-    bool                        mSendPacketRun = true;
+    //bool                        mSendPacketRun = true;
     std::unique_ptr<Network>    mNetwork;
 
     using receiver = void(ChatServer::*)(stPacket p);

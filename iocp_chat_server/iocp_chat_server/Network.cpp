@@ -1,5 +1,5 @@
-#pragma comment(lib, "Ws2_32.lib")	//AcceptEx
-#pragma comment(lib, "mswsock.lib") //AcceptEx
+#pragma comment(lib, "Ws2_32.lib")
+#pragma comment(lib, "mswsock.lib")
 
 #include "Network.h"
 #include "Define.h"
@@ -18,94 +18,86 @@
 // 코드 전체적으로 함수에서 실패 값을 반환하지 않고, 이것을 처리하는 코드가 없습니다.
 // 이 부분 보완 바랍니다
 
-
-void Network::Init(UINT16 SERVER_PORT)
+Error Network::Init(UINT16 SERVER_PORT)
 {
-	mMaxThreadCount = std::thread::hardware_concurrency() * 2 + 1;
-	CreateListenSocket();
-	CreateIOCP();
-	CreateClient(MAX_CLIENT);
-	BindandListen(SERVER_PORT);
+	SetMaxThreadCount();
+
+	Error error = Error::NONE;
+	error = WinsockStartup();
+	if (Error::NONE != error)
+		return error;
 	
+	error = CreateListenSocket();
+	if (Error::NONE != error)
+		return error;
+
+	error = CreateIOCP();
+	if (Error::NONE != error)
+		return error;
+
+	CreateClient(MAX_CLIENT);
+	
+	error = BindandListen(SERVER_PORT);
+	if (Error::NONE != error)
+		return error;
+
+	error = RegisterListenSocketToIOCP();
+	if (Error::NONE != error)
+		return error;
+
+	error = SetAsyncAccept();
+	if (Error::NONE != error)
+		return error;
+
+	return Error::NONE;
 }
 
-//TODO: 최흥배 
-// WSAStartup는 소켓 API의 초기화 함수라서 이 함수의 이름만으로는 이런 것이 있을거라고 생각하기 힘듭니다. 따로 분리하는 것이 좋을 것 같습니다.
-// 함수 내부에서 실패가 2개 이상입니다. 에러를 반환하고, 에러도 어떤 종류인지 외부에서 알 수 있게 bool 타입보다는 enum이 더 좋습니다.
-//소켓을 초기화하는 함수
-void Network::CreateListenSocket()
+Error Network::WinsockStartup()
 {
 	WSADATA wsaData;
 	int nRet = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (0 != nRet)
 	{
 		printf("[ERROR] WSAStartup()함수 실패 : %d\n", WSAGetLastError());
-		return;
+		return Error::WSASTARTUP;
 	}
+	return Error::NONE;
+}
 
-	//연결지향형 TCP , Overlapped I/O 소켓을 생성
+void Network::SetMaxThreadCount()
+{
+	//WaingThread Queue에 대기 상태로 넣을 쓰레드들 생성 권장되는 개수 : (cpu개수 * 2) + 1 
+	mMaxThreadCount = std::thread::hardware_concurrency() * 2 + 1;
+}
+
+//TODO: 최흥배 
+// WSAStartup는 소켓 API의 초기화 함수라서 이 함수의 이름만으로는 이런 것이 있을거라고 생각하기 힘듭니다. 따로 분리하는 것이 좋을 것 같습니다.
+// 함수 내부에서 실패가 2개 이상입니다. 에러를 반환하고, 에러도 어떤 종류인지 외부에서 알 수 있게 bool 타입보다는 enum이 더 좋습니다.
+//소켓을 초기화하는 함수
+Error Network::CreateListenSocket()
+{
 	mListenSocket = WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, NULL, WSA_FLAG_OVERLAPPED);
-
 	if (INVALID_SOCKET == mListenSocket)
 	{
-		printf("[에러] socket()함수 실패 : %d\n", WSAGetLastError());
-		return;
+		printf("[ERROR] socket()함수 실패 : %d\n", WSAGetLastError());
+		return Error::SOCKET_CREATE_LISTEN;
 	}
-}
-
-//TODO: 최흥배
-// 함수 이름과 달리 내부에서 IOCP 핸들에 등록도하고, Accept 함수 호출도 하고 있습니다. 분리하는 것이 좋습니다.
-// 실패와 성공이 있으면 결과를 반환해 주세요
-void Network::BindandListen(UINT16 SERVER_PORT)
-{
-	SOCKADDR_IN		stServerAddr;
-	stServerAddr.sin_family = AF_INET;
-	stServerAddr.sin_port = htons(SERVER_PORT); //서버 포트를 설정한다.		
-	//어떤 주소에서 들어오는 접속이라도 받아들이겠다.
-	//보통 서버라면 이렇게 설정한다. 만약 한 아이피에서만 접속을 받고 싶다면
-	//그 주소를 inet_addr함수를 이용해 넣으면 된다.
-	stServerAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-
-	//위에서 지정한 서버 주소 정보와 cIOCompletionPort 소켓을 연결한다.
-	int nRet = bind(mListenSocket, (SOCKADDR*)&stServerAddr, sizeof(SOCKADDR_IN));
-	if (0 != nRet)
-	{
-		printf("[에러] bind()함수 실패 : %d\n", WSAGetLastError());
-		return;
-	}
-
-	//접속 요청을 받아들이기 위해 cIOCompletionPort소켓을 등록하고 
-	//접속대기큐를 5개로 설정 한다.
-	nRet = listen(mListenSocket, 5);
-	if (0 != nRet)
-	{
-		printf("[에러] listen()함수 실패 : %d\n", WSAGetLastError());
-		return;
-	}
-
-	CreateIoCompletionPort((HANDLE)mListenSocket, mIOCPHandle, NULL, NULL);
-
-	//TODO: 최흥배
-	// 서버를 실행을 하자말자 많은 접속이 발생했을 때나 클라이언트 접속과 해제가 빈번한 경우를 잘 처리하기 위해 Accept를 최대 연결 수만큼 미리 요청할 수 있습니다.
-	// 현재는 1개만 accept를 요청을 했는데 최대 연결 가능 수만큼 미리 accept 하도록 합니다.
-	if (SOCKET_ERROR == AsyncAccept(mListenSocket))
-	{
-		printf("[에러] AsyncAccept()함수 실패 : %d", WSAGetLastError());
-		return;
-	}
+	return Error::NONE;
 }
 
 //TODO: 최흥배
 // 실패와 성공이 있으면 결과를 반환해 주세요
-void Network::CreateIOCP()
+Error Network::CreateIOCP()
 {
 	mIOCPHandle = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, NULL, mMaxThreadCount);
 	if (NULL == mIOCPHandle)
 	{
-		printf("[에러] CreateIoCompletionPort()함수 실패: %d\n", GetLastError());
-		return;
+		printf("[ERROR] CreateIoCompletionPort()함수 실패: %d\n", GetLastError());
+		return Error::IOCP_CREATE;
 	}
+	return Error::NONE;
 }
+
 void Network::CreateClient(const UINT32 maxClientCount)
 {
 	for (UINT32 i = 0; i < maxClientCount; i++)
@@ -114,20 +106,74 @@ void Network::CreateClient(const UINT32 maxClientCount)
 		mClientInfos[i].SetId(i);
 	}
 }
+
+//TODO: 최흥배
+// 함수 이름과 달리 내부에서 IOCP 핸들에 등록도하고, Accept 함수 호출도 하고 있습니다. 분리하는 것이 좋습니다.
+// 실패와 성공이 있으면 결과를 반환해 주세요
+Error Network::BindandListen(UINT16 SERVER_PORT)
+{
+	SOCKADDR_IN		stServerAddr;
+	stServerAddr.sin_family = AF_INET;
+	stServerAddr.sin_port = htons(SERVER_PORT);		
+	stServerAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+	int nRet = bind(mListenSocket, (SOCKADDR*)&stServerAddr, sizeof(SOCKADDR_IN));
+	if (0 != nRet)
+	{
+		printf("[ERROR] bind()함수 실패 : %d\n", WSAGetLastError());
+		return Error::SOCKET_BIND;
+	}
+
+	nRet = listen(mListenSocket, 5);
+	if (0 != nRet)
+	{
+		printf("[ERROR] listen()함수 실패 : %d\n", WSAGetLastError());
+		return Error::SOCKET_LISTEN;
+	}
+
+	return Error::NONE;
+}
+
+Error Network::RegisterListenSocketToIOCP()
+{
+	HANDLE handle = CreateIoCompletionPort((HANDLE)mListenSocket, mIOCPHandle, NULL, NULL);
+	if (handle != mIOCPHandle)
+	{
+		printf("[ERROR] mListenSocket CreateIoCompletionPort 등록 실패: %d\n", GetLastError());
+		return Error::SOCKET_REGISTER_IOCP;
+	}
+
+	return Error::NONE;
+}
+
+Error Network::SetAsyncAccept()
+{
+	//TODO: 최흥배
+	// 서버를 실행을 하자말자 많은 접속이 발생했을 때나 클라이언트 접속과 해제가 빈번한 경우를 잘 처리하기 위해 Accept를 최대 연결 수만큼 미리 요청할 수 있습니다.
+	// 현재는 1개만 accept를 요청을 했는데 최대 연결 가능 수만큼 미리 accept 하도록 합니다.
+	if (SOCKET_ERROR == AsyncAccept(mListenSocket))
+	{
+		printf("[에러] AsyncAccept()함수 실패 : %d", WSAGetLastError());
+		return Error::SOCKET_ASYNC_ACCEPT;
+	}
+	return Error::NONE;
+}
+
 void Network::Run()
 {
 	SetWokerThread();
-	//SetAccepterThread();
+	SetSendPacketThread();
 }
+
 void Network::SetWokerThread()
 {
-	//WaingThread Queue에 대기 상태로 넣을 쓰레드들 생성 권장되는 개수 : (cpu개수 * 2) + 1 
 	for (int i = 0; i < mMaxThreadCount; i++)
 	{
 		mIOWorkerThreads.emplace_back([this]() { WokerThread(); });
 	}
 	printf("WokerThread 시작..\n");
 }
+
 void Network::WokerThread()
 {
 	//CompletionKey를 받을 포인터 변수
@@ -179,16 +225,45 @@ void Network::WokerThread()
 		{
 			//TODO 최흥배
 			// Send 완료 이벤트를 처리해야 하지 않나요?
-			//패킷 순서 확인
-			//ProcSendOperation(pClientInfo, dwIoSize);
+			ProcSendOperation(pClientInfo, dwIoSize);
 		}
-		//예외
 		else
 		{
 			printf("socket(%d)에서 예외상황\n", (int)pClientInfo->GetClientSocket());
 		}
 	}
 }
+
+void Network::SetSendPacketThread()
+{
+	for (int i = 0; i < 1; i++)
+	{
+		mSendPacketThreads.emplace_back([this]() { SendPacketThread(); });
+	}
+}
+
+void Network::SendPacketThread()
+{
+	while (mSendPacketRun)
+	{
+		if (IsEmptyClientPoolSendPacket())
+		{
+			Sleep(50);
+			continue;
+		}
+
+		ClientInfo* clientInfo = GetClientSendingPacket();
+		stPacket p = clientInfo->GetSendPacket();
+
+		while (clientInfo->IsSending())
+			Sleep(50);
+
+		clientInfo->SetLastSendPacket(p);
+		clientInfo->SetSending(true);
+		SendData(p);
+	}
+}
+
 void Network::ProcAcceptOperation(stOverlappedEx* pOverlappedEx)
 {
 	PSOCKADDR pRemoteSocketAddr = nullptr;
@@ -241,38 +316,43 @@ void Network::ProcAcceptOperation(stOverlappedEx* pOverlappedEx)
 // 버그라고 할 수 있는데 패킷이 뭉쳐 왔을 때는 아래 방식으로 하면 더 이상 클라이언트의 요청을 처리하지 못하게 됩니다.
 void Network::ProcRecvOperation(ClientInfo* pClientInfo, DWORD dwIoSize)
 {
-	//헤더파싱
-	stPacketHeader header;
-	memcpy_s(&header.mSize, sizeof(UINT16), pClientInfo->GetRecvBuf(), sizeof(UINT16));
-	memcpy_s(&header.mPacket_id, sizeof(UINT16), &pClientInfo->GetRecvBuf()[2], sizeof(UINT16));
+	//stPacketHeader header;
+	//memcpy_s(&header.mSize, sizeof(UINT16), pClientInfo->GetRecvBuf(), sizeof(UINT16));
+	//memcpy_s(&header.mPacket_id, sizeof(UINT16), &pClientInfo->GetRecvBuf()[2], sizeof(UINT16));
 
 	//TODO 최흥배
 	// 불필요하게 이중 복사를 합니다.
 	// stPacket 생성자에서도 또 복사를 하고 있네요
-	char body[MAX_SOCKBUF] = { 0, };
-	UINT32 bodySize = (UINT32)dwIoSize - PACKET_HEADER_SIZE;
-	memcpy_s(body, bodySize, &pClientInfo->GetRecvBuf()[PACKET_HEADER_SIZE], bodySize);
+	//char body[MAX_SOCKBUF] = { 0, };
+	//UINT32 bodySize = (UINT32)dwIoSize - PACKET_HEADER_SIZE;
+	//memcpy_s(body, bodySize, &pClientInfo->GetRecvBuf()[PACKET_HEADER_SIZE], bodySize);
 
-	pClientInfo->AddRecvPacket(stPacket(pClientInfo->GetId(), 0, header, body, bodySize));
+	//pClientInfo->AddRecvPacket(stPacket(pClientInfo->GetId(), 0, header, body, bodySize));
 
-	AddToClientPoolRecvPacket(pClientInfo);
+	//AddToClientPoolRecvPacket(pClientInfo);
 
+	//BindRecv(pClientInfo);
+
+	AddToClientPoolRecvPacket(pClientInfo, dwIoSize);
 	BindRecv(pClientInfo);
 }
 void Network::ProcSendOperation(ClientInfo* pClientInfo, DWORD dwIoSize)
 {
 	if (dwIoSize != pClientInfo->GetLastSendPacket().mHeader.mSize)
 	{
-		//전송이 안된 나머지 부분만 보내도록 수정
-		printf("[ERROR] 송신 실패.. 재전송 시도..\n");
-		pClientInfo->AddSendPacket(pClientInfo->GetLastSendPacket());
+		//제대로 전송이 안됐다면 풀에 가장 앞에 추가하여 다시 보내도록 한다.
+		printf("[ERROR] 유저 %d 송신 실패.. %d 재전송 시도..\n", pClientInfo->GetId(), pClientInfo->GetLastSendPacket().mHeader.mPacket_id);
+		pClientInfo->AddSendPacketAtFront(pClientInfo->GetLastSendPacket());
+		AddToClientPoolSendPacket(pClientInfo);
 	}
 	else
 	{
-		pClientInfo->SetSending(false);
-		printf("유저 %d bytes : %d 송신 완료\n", pClientInfo->GetId(), dwIoSize);
+		printf("유저 %d bytes : id : %d, size: %d 송신 완료\n", pClientInfo->GetId(), pClientInfo->GetLastSendPacket().mHeader.mPacket_id, dwIoSize);
 	}
+	pClientInfo->SetLastSendPacket(stPacket());
+	pClientInfo->SetSending(false);
 }
+
 //소켓의 연결을 종료 시킨다.
 void Network::CloseSocket(ClientInfo* pClientInfo, bool bIsForce)
 {
@@ -287,7 +367,7 @@ void Network::CloseSocket(ClientInfo* pClientInfo, bool bIsForce)
 	//TODO 최흥배
 	// SO_LINGER로 바로 끊어버리므로 shutdown 안해도 괜찮습니다.
 	//socketClose소켓의 데이터 송수신을 모두 중단 시킨다.
-	shutdown(pClientInfo->GetClientSocket(), SD_BOTH);
+	//shutdown(pClientInfo->GetClientSocket(), SD_BOTH);
 
 	//소켓 옵션을 설정한다.
 	setsockopt(pClientInfo->GetClientSocket(), SOL_SOCKET, SO_LINGER, (char*)&stLinger, sizeof(stLinger));
@@ -297,6 +377,7 @@ void Network::CloseSocket(ClientInfo* pClientInfo, bool bIsForce)
 
 	pClientInfo->SetClientSocket(INVALID_SOCKET);
 }
+
 //WSASend Overlapped I/O작업을 시킨다.
 bool Network::SendMsg(ClientInfo* pClientInfo, char* pMsg, UINT32 len)
 {
@@ -327,6 +408,7 @@ bool Network::SendMsg(ClientInfo* pClientInfo, char* pMsg, UINT32 len)
 	}
 	return true;
 }
+
 //WSARecv Overlapped I/O 작업을 시킨다.
 bool Network::BindRecv(ClientInfo* pClientInfo)
 {
@@ -355,11 +437,13 @@ bool Network::BindRecv(ClientInfo* pClientInfo)
 
 	return true;
 }
+
 void Network::SetAccepterThread()
 {
 	mAccepterThread = std::thread([this]() { AccepterThread(); });
 	printf("AccepterThread 시작..\n");
 }
+
 void Network::AccepterThread()
 {
 	SOCKADDR_IN		stClientAddr;
@@ -407,6 +491,7 @@ void Network::AccepterThread()
 		++mClientCnt;
 	}
 }
+
 ClientInfo* Network::GetEmptyClientInfo()
 {
 	//TODO 최흥배
@@ -421,10 +506,12 @@ ClientInfo* Network::GetEmptyClientInfo()
 
 	return nullptr;
 }
+
 ClientInfo* Network::GetClientInfo(UINT32 id)
 {
 	return id >= MAX_CLIENT ? nullptr : &mClientInfos.at(id);
 }
+
 //CompletionPort객체와 소켓과 CompletionKey를
 //연결시키는 역할을 한다.
 bool Network::BindIOCompletionPort(ClientInfo* pClientInfo)
@@ -442,23 +529,27 @@ bool Network::BindIOCompletionPort(ClientInfo* pClientInfo)
 
 	return true;
 }
-ClientInfo* Network::GetClientRecvedPacket()
+
+std::pair<ClientInfo*, size_t> Network::GetClientRecvedPacket()
 {
 	std::lock_guard<std::mutex> guard(mRecvPacketLock);
-	ClientInfo* front = mClientPoolRecvedPacket.front();
+	std::pair<ClientInfo*, size_t> front = mClientPoolRecvedPacket.front();
 	mClientPoolRecvedPacket.pop();
 	return front;
 }
+
 bool Network::IsEmptyClientPoolRecvPacket()
 {
 	std::lock_guard<std::mutex> guard(mRecvPacketLock);
 	return mClientPoolRecvedPacket.empty();
 }
-void Network::AddToClientPoolRecvPacket(ClientInfo* c)
+
+void Network::AddToClientPoolRecvPacket(ClientInfo* c, size_t size)
 {
 	std::lock_guard<std::mutex> guard(mRecvPacketLock);
-	mClientPoolRecvedPacket.push(c);
+	mClientPoolRecvedPacket.push(std::make_pair(c, size));
 }
+
 BOOL Network::AsyncAccept(SOCKET listenSocket)
 {
 	BOOL ret = false;
@@ -481,6 +572,7 @@ BOOL Network::AsyncAccept(SOCKET listenSocket)
 
 	return ret;
 }
+
 ClientInfo* Network::GetClientSendingPacket()
 {
 	std::lock_guard<std::mutex> guard(mSendPacketLock);
@@ -488,16 +580,19 @@ ClientInfo* Network::GetClientSendingPacket()
 	mClientPoolSendingPacket.pop();
 	return front;
 }
+
 bool Network::IsEmptyClientPoolSendPacket()
 {
 	std::lock_guard<std::mutex> guard(mSendPacketLock);
 	return mClientPoolSendingPacket.empty();
 }
+
 void Network::AddToClientPoolSendPacket(ClientInfo* c)
 {
 	std::lock_guard<std::mutex> guard(mSendPacketLock);
 	mClientPoolSendingPacket.push(c);
 }
+
 void Network::SendData(stPacket packet)
 {
 	//char* pMsg = packet.mBody;
@@ -520,8 +615,8 @@ void Network::SendData(stPacket packet)
 
 	ClientInfo* c = GetClientInfo(packet.mClientTo);
 	SendMsg(c, buff, header.mSize);
-
 }
+
 //생성되어있는 쓰레드를 파괴한다.
 void Network::DestroyThread()
 {
@@ -544,6 +639,7 @@ void Network::DestroyThread()
 
 	closesocket(mListenSocket);
 }
+
 void Network::Destroy()
 {
 	DestroyThread();

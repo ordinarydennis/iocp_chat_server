@@ -18,7 +18,7 @@ public:
 	char*			GetRecvBuf() { return mRecvBuf; };
 	char*			GetSendBuf() { return mSendBuf; };
 
-	stPacket		GetLastSendPacket() { return mLastSendPacket; };
+	stPacket		GetLastSendPacket();
 	void			SetLastSendPacket(const stPacket& packet);
 
 	stOverlappedEx*	GetRecvOverlappedEx() { return &m_stRecvOverlappedEx; };
@@ -28,10 +28,10 @@ public:
 	void			SetClientSocket(SOCKET clientSocket);
 	void			AddRecvPacket(stPacket p);
 	void			AddSendPacket(stPacket p);
+	void			AddSendPacketAtFront(stPacket p);
 	void			SetRecvOverlappedEx(stOverlappedEx overlappedEx);
 	void			SetSendOverlappedEx(const stOverlappedEx& overlappedEx);
 	void			SetSending(bool bSending);
-	void			SendMgs(char* mgs);
 
 private:
 	INT32						mId = 0;
@@ -41,12 +41,13 @@ private:
 	stOverlappedEx				m_stSendOverlappedEx;
 
 	std::queue<stPacket>        mRecvPacketPool;
-	std::queue<stPacket>        mSendPacketPool;
+	std::deque<stPacket>        mSendPacketPool;
 
 	std::mutex                  mRecvPacketPoolLock;
 	std::mutex                  mSendPacketPoolLock;
 
 	stPacket					mLastSendPacket;
+	std::mutex                  mLastSendPacketLock;
 
 	//TODO: stOverlappedEx에 있는걸로 대체하기
 	char						mRecvBuf[MAX_SOCKBUF] = { 0, };

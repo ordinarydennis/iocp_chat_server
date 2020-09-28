@@ -8,15 +8,21 @@
 #include <string>
 #include <iostream>
 
-void ChatServer::Init()
+Error ChatServer::Init()
 {
+	Error error = Error::NONE;
+
 	mNetwork = std::make_unique<Network>();
-	mNetwork->Init(SERVER_PORT);
+	error = mNetwork->Init(SERVER_PORT);
+	if (Error::NONE != error)
+		return error;
 	
 	mRedis = std::make_unique<Redis>();
 	mRedis->Connect(REDIS_IP, REDIS_PORT);
 
 	RegisterRecvProc();
+
+	return error;
 }
 void ChatServer::RegisterRecvProc()
 {
@@ -89,15 +95,13 @@ void ChatServer::ProcRoomEnter(stPacket packet)
 	auto userList = room->GetUserList();
 	char userListBuf[MAX_SOCKBUF] = { 0, };
 	size_t userListBufSize = 0;
-	UINT16 userCount = userList->size() - 1;	//자기 자신은 카운트 하지 않음.
+	UINT16 userCount = static_cast<UINT16>(userList->size());	//자기 자신은 카운트 하지 않음.
 	memcpy_s(userListBuf, 1, &userCount, 1);
 	userListBufSize++;
 	
 	for (auto user : *userList)
 	{
 		UINT64 userUniqueId = user->GetClientId();
-		if (packet.mClientFrom == userUniqueId)
-			continue;
 		
 		const size_t userUniqueIdSize = sizeof(userUniqueId);
 		const size_t bodySize = userUniqueIdSize + MAX_USER_ID_BYTE_LENGTH;
@@ -113,7 +117,7 @@ void ChatServer::ProcRoomEnter(stPacket packet)
 		userListBufSize += userDataSize;
 	}
 
-	if (1 < userListBufSize)
+	if (0 < userCount)
 	{
 		SendPacket(
 			packet.mClientFrom,
@@ -124,27 +128,27 @@ void ChatServer::ProcRoomEnter(stPacket packet)
 		);
 	}
 
-
 	//방 유저들에게 노티
-	//auto  userList = room->GetUserList();
+	UINT64 newUserUniqueId = chatUser->GetClientId();
+	const size_t userUniqueIdSize = sizeof(newUserUniqueId);
+	const size_t bodySize2 = userUniqueIdSize + MAX_USER_ID_BYTE_LENGTH;
+	char body2[bodySize2] = { 0, };
+	size_t idLen = chatUser->GetUserId().length();
+	memcpy_s(body2, userUniqueIdSize, &newUserUniqueId, userUniqueIdSize);
+	memcpy_s(&body2[userUniqueIdSize], 1, &idLen, 1);
+	memcpy_s(&body2[userUniqueIdSize + 1], chatUser->GetUserId().length(), chatUser->GetUserId().c_str(), chatUser->GetUserId().length());
+
 	for (auto user : *userList)
 	{
-		UINT64 userUniqueId = chatUser->GetClientId();
-		const size_t userUniqueIdSize = sizeof(userUniqueId);
-		const size_t bodySize = userUniqueIdSize + MAX_USER_ID_BYTE_LENGTH;
-		
-		char body[bodySize] = { 0, };
-		size_t idLen = chatUser->GetUserId().length();
-		memcpy_s(body, userUniqueIdSize, &userUniqueId, userUniqueIdSize);
-		memcpy_s(&body[userUniqueIdSize], 1, &idLen, 1);
-		memcpy_s(&body[userUniqueIdSize + 1], chatUser->GetUserId().length(), chatUser->GetUserId().c_str(), chatUser->GetUserId().length());
+		if (user->GetClientId() == newUserUniqueId)
+			continue;
 
 		SendPacket(
-			packet.mClientFrom,
+			newUserUniqueId,
 			user->GetClientId(),
 			static_cast<UINT16>(PacketID::ROOM_NEW_USER_NTF),
-			body,
-			bodySize
+			body2,
+			bodySize2
 		);
 	}
 }
@@ -162,7 +166,7 @@ void ChatServer::SendPacket(UINT32 from, UINT32 to, UINT16 packetId, char* body,
 		bodySize
 	);
 
-	ClientInfo* clientInfo = mNetwork->GetClientInfo(from);
+	ClientInfo* clientInfo = mNetwork->GetClientInfo(to);
 	clientInfo->AddSendPacket(chatPacket);
 	mNetwork->AddToClientPoolSendPacket(clientInfo);
 }
@@ -261,10 +265,7 @@ void ChatServer::Run()
 	
 	//TODO 최흥배
 	// SetSendPacketThread 스레드는 Network 관련 스레드로 Network 레이어로 들어가야 합니다.
-	SetSendPacketThread();
 	SetReceivePacketThread();
-	SetSendPacketThread();
-	
 	SetRedisResponseThread();
 	Waiting();
 }
@@ -339,13 +340,19 @@ void ChatServer::ReceivePacketThread()
 			continue;
 		}
 		
-		ClientInfo* clientInfo = mNetwork->GetClientRecvedPacket();
+		std::pair<ClientInfo*, size_t> recvedPacketInfo = mNetwork->GetClientRecvedPacket();
+		ClientInfo* pClientInfo = recvedPacketInfo.first;
+		size_t dwIoSize = recvedPacketInfo.second;
 
-		stPacket p = clientInfo->GetRecvPacket();
-		if (0 == p.mHeader.mSize)
-			continue;
+		stPacketHeader header;
+		memcpy_s(&header.mSize, sizeof(UINT16), pClientInfo->GetRecvBuf(), sizeof(UINT16));
+		memcpy_s(&header.mPacket_id, sizeof(UINT16), &pClientInfo->GetRecvBuf()[2], sizeof(UINT16));
 
-		ProcessPacket(p);
+		char body[MAX_SOCKBUF] = { 0, };
+		UINT32 bodySize = (UINT32)dwIoSize - PACKET_HEADER_SIZE;
+		memcpy_s(body, bodySize, &pClientInfo->GetRecvBuf()[PACKET_HEADER_SIZE], bodySize);
+
+		ProcessPacket(stPacket(pClientInfo->GetId(), 0, header, body, bodySize));
 	}
 }
 void ChatServer::ProcessPacket(stPacket p)
@@ -357,53 +364,52 @@ void ChatServer::ProcessPacket(stPacket p)
 		(this->*(iter->second))(p);
 	}
 }
-void ChatServer::SetSendPacketThread()
-{
-	for (int i = 0; i < 1; i++)
-	{
-		mSendPacketThreads.emplace_back([this]() { SendPacketThread(); });
-	}
-}
-void ChatServer::SendPacketThread()
-{
-	while (mSendPacketRun)
-	{
-		if (mNetwork->IsEmptyClientPoolSendPacket())
-		{
-			//Sleep(50);
-			continue;
-		}
-			
-		ClientInfo* clientInfo = mNetwork->GetClientSendingPacket();
-		stPacket p = clientInfo->GetSendPacket();
-		if (0 == p.mHeader.mSize)
-			continue;
-
-		while (clientInfo->IsSending())
-			Sleep(50);
-
-		//TODO: 이거 위치 옮기자
-		clientInfo->SetLastSendPacket(p);
-		mNetwork->SendData(p);
-	}
-}
+//void ChatServer::SetSendPacketThread()
+//{
+//	for (int i = 0; i < 1; i++)
+//	{
+//		mSendPacketThreads.emplace_back([this]() { SendPacketThread(); });
+//	}
+//}
+//void ChatServer::SendPacketThread()
+//{
+//	while (mSendPacketRun)
+//	{
+//		if (mNetwork->IsEmptyClientPoolSendPacket())
+//		{
+//			Sleep(50);
+//			continue;
+//		}
+//			
+//		ClientInfo* clientInfo = mNetwork->GetClientSendingPacket();
+//		stPacket p = clientInfo->GetSendPacket();
+//		if (0 == p.mHeader.mSize)
+//			continue;
+//
+//		while (clientInfo->IsSending())
+//			Sleep(50);
+//		
+//		//TODO: 이거 위치 옮기자
+//		clientInfo->SetLastSendPacket(p);
+//		mNetwork->SendData(p);
+//	}
+//}
 void ChatServer::Destroy()
 {
-	//해제 순서 중요한가?
 	mReceivePacketRun = false;
 	if (mReceivePacketThread.joinable())
 	{
 		mReceivePacketThread.join();
 	}
 
-	mSendPacketRun = false;
-	for (auto& th : mSendPacketThreads)
-	{
-		if (th.joinable())
-		{
-			th.join();
-		}
-	}
+	//mSendPacketRun = false;
+	//for (auto& th : mSendPacketThreads)
+	//{
+	//	if (th.joinable())
+	//	{
+	//		th.join();
+	//	}
+	//}
 
 	mNetwork->Destroy();
 }
