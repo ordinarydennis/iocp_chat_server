@@ -1,7 +1,7 @@
 #pragma once
 
 #include "RedisTask.h"
-
+#include "Define.h"
 #include <vector>
 #include <thread>
 #include <queue>
@@ -19,7 +19,7 @@ public:
 	Redis();
 	~Redis();
 
-	bool Connect(const char* ip, unsigned port);
+	Error Connect(const char* ip, unsigned port);
 	void Run();
 	void Destroy();
 

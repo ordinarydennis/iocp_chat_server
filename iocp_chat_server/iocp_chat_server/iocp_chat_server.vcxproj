@@ -147,6 +147,7 @@
     <ClCompile Include="ChatUser.cpp" />
     <ClCompile Include="ChatUserManager.cpp" />
     <ClCompile Include="ClientInfo.cpp" />
+    <ClCompile Include="Define.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Network.cpp" />
     <ClCompile Include="Redis.cpp" />

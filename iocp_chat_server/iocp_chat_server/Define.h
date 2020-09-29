@@ -1,9 +1,10 @@
 #pragma once
 
+#include "NetworkConfig.h"
 #include <winsock2.h>
 #include <Ws2tcpip.h>
 #include <queue>
-#include "NetworkConfig.h"
+
 
 enum class Error
 {
@@ -16,6 +17,7 @@ enum class Error
 	SOCKET_LISTEN,
 	SOCKET_REGISTER_IOCP,
 	SOCKET_ASYNC_ACCEPT,
+	REDIS_CONNECT,
 };
 
 enum class ERROR_CODE : UINT16
@@ -47,6 +49,7 @@ enum class PacketID : UINT16
 };
 enum class IOOperation
 {
+	NONE,
 	ACCEPT,
 	RECV,
 	SEND
@@ -55,11 +58,18 @@ enum class IOOperation
 //WSAOVERLAPPED구조체를 확장 시켜서 필요한 정보를 더 넣었다.
 struct stOverlappedEx
 {
-	WSAOVERLAPPED m_wsaOverlapped;			//구조체의 가장 첫번째로 와야 한다. 제대로 데이터를 받을 수 있다.	
-	WSABUF		m_wsaBuf;				
-	IOOperation m_eOperation;		
-	char		m_buffer[MAX_SOCKBUF];		//비동기 accept에서 데이터 받아올때 필요하다.
-	SOCKET		m_clientSocket;				//비동기 accept에서 데이터 받아올때 필요하다.
+	WSAOVERLAPPED	m_wsaOverlapped;			//구조체의 가장 첫번째로 와야 한다. 제대로 데이터를 받을 수 있다.	
+	WSABUF			m_wsaBuf;				
+	IOOperation		m_eOperation;	
+	UINT32			m_clientId;					
+	stOverlappedEx()
+	{
+		ZeroMemory(&m_wsaOverlapped, sizeof(m_wsaOverlapped));
+		m_eOperation	= IOOperation::NONE;
+		m_wsaBuf.buf	= nullptr;
+		m_wsaBuf.len	= 0;
+		m_clientId		= 0;
+	}
 };
 
 struct stPacketHeader
@@ -95,3 +105,5 @@ struct stPacket
 		return mHeader.mSize - PACKET_HEADER_SIZE;
 	}
 };
+
+UINT64 GetCurTimeSec();

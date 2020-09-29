@@ -52,24 +52,25 @@ private:
     BOOL            AsyncAccept(SOCKET listenSocket);
 
 private:
-    UINT16      mMaxThreadCount = 0;
-    SOCKET      mListenSocket   = INVALID_SOCKET;
-    HANDLE		mIOCPHandle     = INVALID_HANDLE_VALUE;
-    bool		mIsWorkerRun    = true;
-    bool		mIsAccepterRun  = true;
-    bool        mSendPacketRun = true;
+    UINT16                      mMaxThreadCount = 0;
+    SOCKET                      mListenSocket   = INVALID_SOCKET;
+    HANDLE                  	mIOCPHandle     = INVALID_HANDLE_VALUE;
+    bool	                   	mIsWorkerRun    = true;
+    bool	                   	mIsAccepterRun  = true;
+    bool                        mSendPacketRun = true;
     //접속 되어있는 클라이언트 수
-    int			mClientCnt = 0;
+    int			                mClientCnt = 0;
     std::thread                 mAccepterThread;
     std::vector<std::thread>    mIOWorkerThreads;
     std::vector<std::thread>    mSendPacketThreads;
     std::vector<ClientInfo>     mClientInfos;
- 
-    std::queue<std::pair<ClientInfo*, size_t>>     mClientPoolRecvedPacket;
-    std::queue<ClientInfo*>     mClientPoolSendingPacket;
+    std::queue<UINT32>          mIdleClientIds;
 
     std::mutex                  mRecvPacketLock;
     std::mutex                  mSendPacketLock;
+    std::queue<ClientInfo*>     mClientPoolSendingPacket;
+    std::queue<std::pair<ClientInfo*, size_t>>     mClientPoolRecvedPacket;
 
-    std::unique_ptr<stOverlappedEx> mAcceptOverlappedEx = std::make_unique<stOverlappedEx>();
+
+    //std::unique_ptr<stOverlappedEx> mAcceptOverlappedEx = std::make_unique<stOverlappedEx>();
 };

@@ -1,14 +1,10 @@
-#pragma comment(lib, "Ws2_32.lib")
-#pragma comment(lib, "mswsock.lib")
-
 #include "Network.h"
 #include "Define.h"
 #include "NetworkConfig.h"
-#include <winsock2.h>
-#include <windows.h>
-#include <mswsock.h>
 #include <iostream>
 #include <string>
+
+using namespace std::chrono;
 
 //TODO 최흥배
 // 코드는 가독성 좋게 만드는 것이 정말 좋습니다. 
@@ -45,9 +41,9 @@ Error Network::Init(UINT16 SERVER_PORT)
 	if (Error::NONE != error)
 		return error;
 
-	error = SetAsyncAccept();
-	if (Error::NONE != error)
-		return error;
+	//error = SetAsyncAccept();
+	//if (Error::NONE != error)
+	//	return error;
 
 	return Error::NONE;
 }
@@ -104,6 +100,7 @@ void Network::CreateClient(const UINT32 maxClientCount)
 	{
 		mClientInfos.emplace_back(i);
 		mClientInfos[i].SetId(i);
+		mIdleClientIds.push(i);
 	}
 }
 
@@ -112,7 +109,7 @@ void Network::CreateClient(const UINT32 maxClientCount)
 // 실패와 성공이 있으면 결과를 반환해 주세요
 Error Network::BindandListen(UINT16 SERVER_PORT)
 {
-	SOCKADDR_IN		stServerAddr;
+	SOCKADDR_IN stServerAddr;
 	stServerAddr.sin_family = AF_INET;
 	stServerAddr.sin_port = htons(SERVER_PORT);		
 	stServerAddr.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -151,17 +148,18 @@ Error Network::SetAsyncAccept()
 	//TODO: 최흥배
 	// 서버를 실행을 하자말자 많은 접속이 발생했을 때나 클라이언트 접속과 해제가 빈번한 경우를 잘 처리하기 위해 Accept를 최대 연결 수만큼 미리 요청할 수 있습니다.
 	// 현재는 1개만 accept를 요청을 했는데 최대 연결 가능 수만큼 미리 accept 하도록 합니다.
-	if (SOCKET_ERROR == AsyncAccept(mListenSocket))
-	{
-		printf("[에러] AsyncAccept()함수 실패 : %d", WSAGetLastError());
-		return Error::SOCKET_ASYNC_ACCEPT;
-	}
+	//if (SOCKET_ERROR == AsyncAccept(mListenSocket))
+	//{
+	//	printf("[에러] AsyncAccept()함수 실패 : %d", WSAGetLastError());
+	//	return Error::SOCKET_ASYNC_ACCEPT;
+	//}
 	return Error::NONE;
 }
 
 void Network::Run()
 {
 	SetWokerThread();
+	SetAccepterThread();
 	SetSendPacketThread();
 }
 
@@ -266,31 +264,13 @@ void Network::SendPacketThread()
 
 void Network::ProcAcceptOperation(stOverlappedEx* pOverlappedEx)
 {
-	PSOCKADDR pRemoteSocketAddr = nullptr;
-	PSOCKADDR pLocalSocketAddr = nullptr;
-	INT pRemoteSocketAddrLength = 0;
-	INT pLocalSocketAddrLength = 0;
-
-	//정보 얻기
-	GetAcceptExSockaddrs(
-		pOverlappedEx->m_buffer, 0,
-		sizeof(SOCKADDR_IN) + 16, sizeof(SOCKADDR_IN) + 16,
-		&pLocalSocketAddr, &pLocalSocketAddrLength, &pRemoteSocketAddr, &pRemoteSocketAddrLength);
-
-	SOCKADDR_IN remoteAddr = *(reinterpret_cast<PSOCKADDR_IN>(pRemoteSocketAddr));
-	//접속한 클라이언트 IP와 포트 정보 얻기
-	char ip[24] = { 0, };
-	inet_ntop(AF_INET, &remoteAddr.sin_addr, ip, sizeof(ip));
-	printf("Accept New  IP %s PORT: %d \n", ip, ntohs(remoteAddr.sin_port));
-
-	ClientInfo* pClientInfo = GetEmptyClientInfo();
+	//TODO: 에러 반환
+	ClientInfo* pClientInfo = GetClientInfo(pOverlappedEx->m_clientId);
 	if (nullptr == pClientInfo)
 	{
 		return;
 	}
 
-	pClientInfo->SetClientSocket(pOverlappedEx->m_clientSocket);
-	//I/O Completion Port객체와 소켓을 연결시킨다.
 	bool bRet = BindIOCompletionPort(pClientInfo);
 	if (false == bRet)
 	{
@@ -304,11 +284,50 @@ void Network::ProcAcceptOperation(stOverlappedEx* pOverlappedEx)
 		return;
 	}
 
-	//클라이언트 갯수 증가
 	++mClientCnt;
 
-	//accept 다시 등록
-	AsyncAccept(mListenSocket);
+	//PSOCKADDR pRemoteSocketAddr = nullptr;
+	//PSOCKADDR pLocalSocketAddr = nullptr;
+	//INT pRemoteSocketAddrLength = 0;
+	//INT pLocalSocketAddrLength = 0;
+
+	//GetAcceptExSockaddrs(
+	//	pOverlappedEx->m_buffer, 0,
+	//	sizeof(SOCKADDR_IN) + 16, sizeof(SOCKADDR_IN) + 16,
+	//	&pLocalSocketAddr, &pLocalSocketAddrLength, &pRemoteSocketAddr, &pRemoteSocketAddrLength);
+
+	//SOCKADDR_IN remoteAddr = *(reinterpret_cast<PSOCKADDR_IN>(pRemoteSocketAddr));
+	////접속한 클라이언트 IP와 포트 정보 얻기
+	//char ip[24] = { 0, };
+	//inet_ntop(AF_INET, &remoteAddr.sin_addr, ip, sizeof(ip));
+	//printf("Accept New  IP %s PORT: %d \n", ip, ntohs(remoteAddr.sin_port));
+
+	//ClientInfo* pClientInfo = GetEmptyClientInfo();
+	//if (nullptr == pClientInfo)
+	//{
+	//	return;
+	//}
+
+	//pClientInfo->SetClientSocket(pOverlappedEx->m_clientSocket);
+	////I/O Completion Port객체와 소켓을 연결시킨다.
+	//bool bRet = BindIOCompletionPort(pClientInfo);
+	//if (false == bRet)
+	//{
+	//	return;
+	//}
+
+	////Recv Overlapped I/O작업을 요청해 놓는다.
+	//bRet = BindRecv(pClientInfo);
+	//if (false == bRet)
+	//{
+	//	return;
+	//}
+
+	////클라이언트 갯수 증가
+	//++mClientCnt;
+
+	////accept 다시 등록
+	//AsyncAccept(mListenSocket);
 }
 
 //TODO 최흥배
@@ -342,6 +361,7 @@ void Network::ProcSendOperation(ClientInfo* pClientInfo, DWORD dwIoSize)
 	{
 		//제대로 전송이 안됐다면 풀에 가장 앞에 추가하여 다시 보내도록 한다.
 		printf("[ERROR] 유저 %d 송신 실패.. %d 재전송 시도..\n", pClientInfo->GetId(), pClientInfo->GetLastSendPacket().mHeader.mPacket_id);
+		//TODO: 한줄로 개선
 		pClientInfo->AddSendPacketAtFront(pClientInfo->GetLastSendPacket());
 		AddToClientPoolSendPacket(pClientInfo);
 	}
@@ -373,9 +393,8 @@ void Network::CloseSocket(ClientInfo* pClientInfo, bool bIsForce)
 	setsockopt(pClientInfo->GetClientSocket(), SOL_SOCKET, SO_LINGER, (char*)&stLinger, sizeof(stLinger));
 
 	//소켓 연결을 종료 시킨다. 
-	closesocket(pClientInfo->GetClientSocket());
-
-	pClientInfo->SetClientSocket(INVALID_SOCKET);
+	pClientInfo->CloseSocket();
+	mIdleClientIds.push(pClientInfo->GetId());
 }
 
 //WSASend Overlapped I/O작업을 시킨다.
@@ -446,65 +465,29 @@ void Network::SetAccepterThread()
 
 void Network::AccepterThread()
 {
-	SOCKADDR_IN		stClientAddr;
-	int nAddrLen = sizeof(SOCKADDR_IN);
-
 	while (mIsAccepterRun)
 	{
-		//접속을 받을 구조체의 인덱스를 얻어온다.
-		ClientInfo* pClientInfo = GetEmptyClientInfo();
-		if (NULL == pClientInfo)
+		//todo: SLEEP
+		for (auto& clientInfo : mClientInfos)
 		{
-			printf("[에러] Client Full\n");
-			return;
+			clientInfo.AsyncAccept(mListenSocket);
 		}
-
-		//클라이언트 접속 요청이 들어올 때까지 기다린다.
-		SOCKET socketClient = accept(mListenSocket, (SOCKADDR*)&stClientAddr, &nAddrLen);
-		
-		if (INVALID_SOCKET == socketClient)
-		{
-			continue;
-		}
-
-		pClientInfo->SetClientSocket(socketClient);
-
-		//I/O Completion Port객체와 소켓을 연결시킨다.
-		bool bRet = BindIOCompletionPort(pClientInfo);
-		if (false == bRet)
-		{
-			return;
-		}
-
-		//Recv Overlapped I/O작업을 요청해 놓는다.
-		bRet = BindRecv(pClientInfo);
-		if (false == bRet)
-		{
-			return;
-		}
-
-		char clientIP[32] = { 0, };
-		inet_ntop(AF_INET, &(stClientAddr.sin_addr), clientIP, 32 - 1);
-		printf("클라이언트 접속 : IP(%s) SOCKET(%d)\n", clientIP, (int)pClientInfo->GetClientSocket());
-
-		//클라이언트 갯수 증가
-		++mClientCnt;
 	}
 }
 
 ClientInfo* Network::GetEmptyClientInfo()
 {
 	//TODO 최흥배
-	// 클라이언트 수가 많을 때는 사용하지 않는 객체를 찾는 것도 좀 부담 될 수 있으므로 사용하지 않는 객체의 인덱스 번호만 관리하고 있으면 쉽고 빠르게 찾을 수 있을 것 같습니다.
-	for (auto& client : mClientInfos)
+	// 클라이언트 수가 많을 때는 사용하지 않는 객체를 찾는 것도 좀 부담 될 수 있으므로 
+	//사용하지 않는 객체의 인덱스 번호만 관리하고 있으면 쉽고 빠르게 찾을 수 있을 것 같습니다.
+	if (mIdleClientIds.empty())
 	{
-		if (INVALID_SOCKET == client.GetClientSocket())
-		{
-			return &client;
-		}
+		return nullptr;
 	}
-
-	return nullptr;
+	
+	UINT32 idleClientId = mIdleClientIds.front();
+	mIdleClientIds.pop();
+	return &mClientInfos[idleClientId];
 }
 
 ClientInfo* Network::GetClientInfo(UINT32 id)
@@ -554,21 +537,21 @@ BOOL Network::AsyncAccept(SOCKET listenSocket)
 {
 	BOOL ret = false;
 	
-	ZeroMemory(&mAcceptOverlappedEx->m_wsaOverlapped, sizeof(mAcceptOverlappedEx->m_wsaOverlapped));
-	ZeroMemory(mAcceptOverlappedEx->m_buffer, MAX_SOCKBUF);
-	mAcceptOverlappedEx->m_eOperation = IOOperation::ACCEPT;
-	mAcceptOverlappedEx->m_clientSocket = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
+	//ZeroMemory(&mAcceptOverlappedEx->m_wsaOverlapped, sizeof(mAcceptOverlappedEx->m_wsaOverlapped));
+	//ZeroMemory(mAcceptOverlappedEx->m_buffer, MAX_SOCKBUF);
+	//mAcceptOverlappedEx->m_eOperation = IOOperation::ACCEPT;
+	//mAcceptOverlappedEx->m_clientSocket = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
 
 	DWORD bytes = 0;
-	ret = AcceptEx(
-		listenSocket, 
-		mAcceptOverlappedEx->m_clientSocket,
-		mAcceptOverlappedEx->m_buffer, 0,
-		sizeof(SOCKADDR_IN) + 16, 
-		sizeof(SOCKADDR_IN) + 16, 
-		&bytes, 
-		reinterpret_cast<LPOVERLAPPED>(&mAcceptOverlappedEx->m_wsaOverlapped)
-	);
+	//ret = AcceptEx(
+	//	listenSocket, 
+	//	mAcceptOverlappedEx->m_clientSocket,
+	//	mAcceptOverlappedEx->m_buffer, 0,
+	//	sizeof(SOCKADDR_IN) + 16, 
+	//	sizeof(SOCKADDR_IN) + 16, 
+	//	&bytes, 
+	//	reinterpret_cast<LPOVERLAPPED>(&mAcceptOverlappedEx->m_wsaOverlapped)
+	//);
 
 	return ret;
 }
@@ -631,11 +614,11 @@ void Network::DestroyThread()
 		}
 	}
 
-	//mIsAccepterRun = false;
-	//if (mAccepterThread.joinable())
-	//{
-	//	mAccepterThread.join();
-	//}
+	mIsAccepterRun = false;
+	if (mAccepterThread.joinable())
+	{
+		mAccepterThread.join();
+	}
 
 	closesocket(mListenSocket);
 }

@@ -17,8 +17,11 @@ Error ChatServer::Init()
 	if (Error::NONE != error)
 		return error;
 	
+	//TODO: 예외처리 추가
 	mRedis = std::make_unique<Redis>();
-	mRedis->Connect(REDIS_IP, REDIS_PORT);
+	error = mRedis->Connect(REDIS_IP, REDIS_PORT);
+	if (Error::NONE != error)
+		return error;
 
 	RegisterRecvProc();
 
@@ -26,7 +29,6 @@ Error ChatServer::Init()
 }
 void ChatServer::RegisterRecvProc()
 {
-	mRecvPacketProcDict = std::unordered_map<PacketID, receiver>();
 	mRecvPacketProcDict[PacketID::DEV_ECHO] = &ChatServer::ProcEcho;
 	mRecvPacketProcDict[PacketID::LOGIN_REQ] = &ChatServer::ProcLogin;
 	mRecvPacketProcDict[PacketID::ROOM_ENTER_REQ] = &ChatServer::ProcRoomEnter;
@@ -144,7 +146,7 @@ void ChatServer::ProcRoomEnter(stPacket packet)
 			continue;
 
 		SendPacket(
-			newUserUniqueId,
+			static_cast<UINT32>(newUserUniqueId),
 			user->GetClientId(),
 			static_cast<UINT16>(PacketID::ROOM_NEW_USER_NTF),
 			body2,

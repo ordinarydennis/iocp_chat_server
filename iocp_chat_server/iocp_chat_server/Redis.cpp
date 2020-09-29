@@ -13,20 +13,27 @@ Redis::Redis()
 {
 	mConn = new RedisCpp::CRedisConn;
 }
+
 Redis::~Redis()
 {
 	delete mConn;
 }
-bool Redis::Connect(const char* ip, unsigned port)
+
+Error Redis::Connect(const char* ip, unsigned port)
 {
 	bool ret = mConn->connect(ip, port);
-	return ret;
+	if (false == ret)
+		return Error::REDIS_CONNECT;
+
+	return Error::NONE;
 }
+
 void Redis::Run()
 {
 	mThread = std::thread([this]() { RedisThread(); });
 	mIsThreadRun = true;
 }
+
 void Redis::Destroy()
 {
 	mIsThreadRun = false;
@@ -35,6 +42,7 @@ void Redis::Destroy()
 		mThread.join();
 	}
 }
+
 void Redis::RedisThread()
 {
 	while (mIsThreadRun)
@@ -75,16 +83,19 @@ void Redis::RedisThread()
 		}
 	}
 }
+
 void Redis::RequestTask(const RedisTask& task)
 {
 	std::lock_guard<std::mutex> guard(mRequestTaskLock);
 	mRequestTaskPool.push(task);
 }
+
 void Redis::ResponseTask(const RedisTask& task)
 {
 	std::lock_guard<std::mutex> guard(mResponseTaskLock);
 	mResponseTaskPool.push(task);
 }
+
 RedisTask Redis::GetRequestTask()
 {
 	std::lock_guard<std::mutex> guard(mRequestTaskLock);
@@ -97,6 +108,7 @@ RedisTask Redis::GetRequestTask()
 	mRequestTaskPool.pop();
 	return task;
 }
+
 RedisTask Redis::GetResponseTask()
 {
 	std::lock_guard<std::mutex> guard(mResponseTaskLock);
