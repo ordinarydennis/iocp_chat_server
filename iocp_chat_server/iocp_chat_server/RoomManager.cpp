@@ -4,10 +4,12 @@ RoomManager::RoomManager()
 {
 
 }
+
 RoomManager::~RoomManager()
 {
 
 }
+
 Room* RoomManager::GetRoom(UINT32 roomNumber)
 {
 	std::lock_guard<std::mutex> guard(mRoomDictLock);
@@ -18,12 +20,14 @@ Room* RoomManager::GetRoom(UINT32 roomNumber)
 
 	return &mRoomDict[roomNumber];
 }
+
 bool RoomManager::IsExistRoom(UINT32 roomNumber)
 {
 	//std::lock_guard<std::mutex> guard(mRoomDictLock);
 	auto item = mRoomDict.find(roomNumber);
 	return (item != mRoomDict.end()) ? true : false;
 }
+
 UINT32 RoomManager::CreateRoom()
 {
 	std::lock_guard<std::mutex> guard(mRoomDictLock);
@@ -34,6 +38,7 @@ UINT32 RoomManager::CreateRoom()
 	mRoomCount++;
 	return roomNumber;
 }
+
 void RoomManager::EnterRoom(UINT32 roomNumber, ChatUser* chatUser)
 {
 	std::lock_guard<std::mutex> guard(mRoomDictLock);

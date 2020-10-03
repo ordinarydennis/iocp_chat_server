@@ -41,10 +41,6 @@ Error Network::Init(UINT16 SERVER_PORT)
 	if (Error::NONE != error)
 		return error;
 
-	//error = SetAsyncAccept();
-	//if (Error::NONE != error)
-	//	return error;
-
 	return Error::NONE;
 }
 
@@ -143,18 +139,18 @@ Error Network::RegisterListenSocketToIOCP()
 	return Error::NONE;
 }
 
-Error Network::SetAsyncAccept()
-{
-	//TODO: 최흥배
-	// 서버를 실행을 하자말자 많은 접속이 발생했을 때나 클라이언트 접속과 해제가 빈번한 경우를 잘 처리하기 위해 Accept를 최대 연결 수만큼 미리 요청할 수 있습니다.
-	// 현재는 1개만 accept를 요청을 했는데 최대 연결 가능 수만큼 미리 accept 하도록 합니다.
-	//if (SOCKET_ERROR == AsyncAccept(mListenSocket))
-	//{
-	//	printf("[에러] AsyncAccept()함수 실패 : %d", WSAGetLastError());
-	//	return Error::SOCKET_ASYNC_ACCEPT;
-	//}
-	return Error::NONE;
-}
+//Error Network::SetAsyncAccept()
+//{
+//	//TODO: 최흥배
+//	// 서버를 실행을 하자말자 많은 접속이 발생했을 때나 클라이언트 접속과 해제가 빈번한 경우를 잘 처리하기 위해 Accept를 최대 연결 수만큼 미리 요청할 수 있습니다.
+//	// 현재는 1개만 accept를 요청을 했는데 최대 연결 가능 수만큼 미리 accept 하도록 합니다.
+//	//if (SOCKET_ERROR == AsyncAccept(mListenSocket))
+//	//{
+//	//	printf("[에러] AsyncAccept()함수 실패 : %d", WSAGetLastError());
+//	//	return Error::SOCKET_ASYNC_ACCEPT;
+//	//}
+//	return Error::NONE;
+//}
 
 void Network::Run()
 {
@@ -234,10 +230,7 @@ void Network::WokerThread()
 
 void Network::SetSendPacketThread()
 {
-	for (int i = 0; i < 1; i++)
-	{
-		mSendPacketThreads.emplace_back([this]() { SendPacketThread(); });
-	}
+	mSendPacketThread = std::thread([this]() { SendPacketThread(); });
 }
 
 void Network::SendPacketThread()
@@ -378,7 +371,7 @@ void Network::CloseSocket(ClientInfo* pClientInfo, bool bIsForce)
 {
 	struct linger stLinger = { 0, 0 };	// SO_DONTLINGER로 설정
 
-// bIsForce가 true이면 SO_LINGER, timeout = 0으로 설정하여 강제 종료 시킨다. 주의 : 데이터 손실이 있을수 있음 
+	// bIsForce가 true이면 SO_LINGER, timeout = 0으로 설정하여 강제 종료 시킨다. 주의 : 데이터 손실이 있을수 있음 
 	if (true == bIsForce)
 	{
 		stLinger.l_onoff = 1;
@@ -578,21 +571,14 @@ void Network::AddToClientPoolSendPacket(ClientInfo* c)
 
 void Network::SendData(stPacket packet)
 {
-	//char* pMsg = packet.mBody;
-	//int nLen = sizeof(packet.mBody);
 	UINT16 packetId = packet.mHeader.mPacket_id;
-
 	char buff[MAX_SOCKBUF] = { 0, };
 
-	//헤더 정보 채워서 보낸다.
 	stPacketHeader header;
-	//header.mSize = static_cast<UINT16>(strlen(pMsg) + PACKET_HEADER_SIZE);
 	header.mSize = packet.mHeader.mSize;
-	// TODO: 여기 수정 해야함!
 	header.mPacket_id = packetId;
 	memcpy_s(buff, sizeof(stPacketHeader), &header, sizeof(stPacketHeader));
 
-	//UINT32 bodySize = strlen(pMsg);
 	UINT32 bodySize = packet.mHeader.mSize - PACKET_HEADER_SIZE;
 	memcpy_s(&buff[PACKET_HEADER_SIZE], bodySize, packet.mBody, bodySize);
 
@@ -614,6 +600,12 @@ void Network::DestroyThread()
 		}
 	}
 
+	mSendPacketRun = false;
+	if (mSendPacketThread.joinable())
+	{
+		mSendPacketThread.join();
+	}
+	  
 	mIsAccepterRun = false;
 	if (mAccepterThread.joinable())
 	{

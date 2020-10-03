@@ -17,7 +17,6 @@ Error ChatServer::Init()
 	if (Error::NONE != error)
 		return error;
 	
-	//TODO: 예외처리 추가
 	mRedis = std::make_unique<Redis>();
 	error = mRedis->Connect(REDIS_IP, REDIS_PORT);
 	if (Error::NONE != error)
@@ -27,6 +26,7 @@ Error ChatServer::Init()
 
 	return error;
 }
+
 void ChatServer::RegisterRecvProc()
 {
 	mRecvPacketProcDict[PacketID::DEV_ECHO] = &ChatServer::ProcEcho;
@@ -35,6 +35,7 @@ void ChatServer::RegisterRecvProc()
 	mRecvPacketProcDict[PacketID::ROOM_CHAT_REQ] = &ChatServer::ProcRoomChat;
 	mRecvPacketProcDict[PacketID::ROOM_LEAVE_REQ] = &ChatServer::ProcRoomLeave;
 }
+
 void ChatServer::ProcEcho(stPacket packet)
 {
 	ClientInfo* clientInfo = mNetwork->GetClientInfo(packet.mClientFrom);
@@ -47,6 +48,7 @@ void ChatServer::ProcEcho(stPacket packet)
 	clientInfo->AddSendPacket(packet);
 	mNetwork->AddToClientPoolSendPacket(clientInfo);
 }
+
 void ChatServer::ProcLogin(stPacket packet)
 {
 	LoginReqPacket loginReqPacket;
@@ -59,6 +61,7 @@ void ChatServer::ProcLogin(stPacket packet)
 	LoginReqRedisPacket redisReqPacket(packet.mClientFrom, REDIS_TASK_ID::REQUEST_LOGIN, buf, MAX_USER_ID_BYTE_LENGTH + MAX_USER_PW_BYTE_LENGTH);
 	mRedis->RequestTask(redisReqPacket.GetTask());
 }
+
 void ChatServer::ProcRoomEnter(stPacket packet)
 {
 	RoomEnterReqPacket reqPacket(packet.mBody, packet.GetBodySize());
@@ -74,7 +77,8 @@ void ChatServer::ProcRoomEnter(stPacket packet)
 	}
 
 	ChatUser* chatUser = mChatUserManager.GetUser(packet.mClientFrom);
-	chatUser->SetRoom(mRoomManager.GetRoom(roomNumber));
+	chatUser->SetRoomNumber(roomNumber);
+
 	mRoomManager.EnterRoom(roomNumber, chatUser);
 
 	//입장 결과 반환
@@ -154,6 +158,7 @@ void ChatServer::ProcRoomEnter(stPacket packet)
 		);
 	}
 }
+
 void ChatServer::SendPacket(UINT32 from, UINT32 to, UINT16 packetId, char* body, size_t bodySize)
 {
 	stPacketHeader header;
@@ -176,8 +181,8 @@ void ChatServer::SendPacket(UINT32 from, UINT32 to, UINT16 packetId, char* body,
 void ChatServer::ProcRoomChat(stPacket packet)
 {
 	const ChatUser* chatUser = mChatUserManager.GetUser(packet.mClientFrom);
-	
-	Room* room = chatUser->GetRoom();
+
+	Room* room = mRoomManager.GetRoom(chatUser->GetRoomNumber());
 	if (nullptr == room)
 	{
 		return;
@@ -218,11 +223,12 @@ void ChatServer::ProcRoomChat(stPacket packet)
 		);
 	}
 }
+
 void ChatServer::ProcRoomLeave(stPacket packet)
 {
 	ChatUser* chatUser = mChatUserManager.GetUser(packet.mClientFrom);
 
-	Room* room = chatUser->GetRoom();
+	Room* room = mRoomManager.GetRoom(chatUser->GetRoomNumber());
 	if (nullptr == room)
 	{
 		return;
@@ -260,6 +266,7 @@ void ChatServer::ProcRoomLeave(stPacket packet)
 		bodySize
 	);
 }
+
 void ChatServer::Run()
 {
 	mNetwork->Run();
@@ -271,6 +278,7 @@ void ChatServer::Run()
 	SetRedisResponseThread();
 	Waiting();
 }
+
 void ChatServer::Waiting()
 {
 	printf("아무 키나 누를 때까지 대기합니다\n");
@@ -289,6 +297,7 @@ void ChatServer::SetRedisResponseThread()
 {
 	mRedisResponseThread = std::thread([this]() { RedisResponseThread(); });
 }
+
 void ChatServer::RedisResponseThread()
 {
 	while (mRedisResponseRun)
@@ -321,17 +330,19 @@ void ChatServer::RedisResponseThread()
 				mNetwork->AddToClientPoolSendPacket(clientInfo);
 				if (ERROR_CODE::NONE == loginResRedisPacket.GetResult())
 				{
-					ChatUser chatUser(loginResRedisPacket.GetUserId(), clientInfo);
+					ChatUser chatUser(loginResRedisPacket.GetUserId(), clientInfo->GetId());
 					mChatUserManager.AddUser(chatUser);
 				}
 			}
 		}
 	}
 }
+
 void ChatServer::SetReceivePacketThread()
 {
 	mReceivePacketThread = std::thread([this]() { ReceivePacketThread(); });
 }
+
 void ChatServer::ReceivePacketThread()
 {
 	while (mReceivePacketRun)
@@ -357,6 +368,7 @@ void ChatServer::ReceivePacketThread()
 		ProcessPacket(stPacket(pClientInfo->GetId(), 0, header, body, bodySize));
 	}
 }
+
 void ChatServer::ProcessPacket(stPacket p)
 {
 	PacketID packetId = static_cast<PacketID>(p.mHeader.mPacket_id);
@@ -366,36 +378,7 @@ void ChatServer::ProcessPacket(stPacket p)
 		(this->*(iter->second))(p);
 	}
 }
-//void ChatServer::SetSendPacketThread()
-//{
-//	for (int i = 0; i < 1; i++)
-//	{
-//		mSendPacketThreads.emplace_back([this]() { SendPacketThread(); });
-//	}
-//}
-//void ChatServer::SendPacketThread()
-//{
-//	while (mSendPacketRun)
-//	{
-//		if (mNetwork->IsEmptyClientPoolSendPacket())
-//		{
-//			Sleep(50);
-//			continue;
-//		}
-//			
-//		ClientInfo* clientInfo = mNetwork->GetClientSendingPacket();
-//		stPacket p = clientInfo->GetSendPacket();
-//		if (0 == p.mHeader.mSize)
-//			continue;
-//
-//		while (clientInfo->IsSending())
-//			Sleep(50);
-//		
-//		//TODO: 이거 위치 옮기자
-//		clientInfo->SetLastSendPacket(p);
-//		mNetwork->SendData(p);
-//	}
-//}
+
 void ChatServer::Destroy()
 {
 	mReceivePacketRun = false;
@@ -403,15 +386,6 @@ void ChatServer::Destroy()
 	{
 		mReceivePacketThread.join();
 	}
-
-	//mSendPacketRun = false;
-	//for (auto& th : mSendPacketThreads)
-	//{
-	//	if (th.joinable())
-	//	{
-	//		th.join();
-	//	}
-	//}
 
 	mNetwork->Destroy();
 }

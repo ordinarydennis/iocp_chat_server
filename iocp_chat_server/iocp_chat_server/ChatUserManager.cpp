@@ -4,10 +4,12 @@
 ChatUserManager::ChatUserManager()
 {
 }
+
 ChatUserManager::~ChatUserManager()
 {
 
 }
+
 ChatUser* ChatUserManager::GetUser(const UINT32 userId)
 {
 	std::lock_guard<std::mutex> guard(mChatUserDictLock);
@@ -21,8 +23,9 @@ ChatUser* ChatUserManager::GetUser(const UINT32 userId)
 
 	return &mChatUserDict[userId];
 }
+
 void ChatUserManager::AddUser(const ChatUser& chatUser)
 {
 	std::lock_guard<std::mutex> guard(mChatUserDictLock);
-	mChatUserDict[chatUser.GetClientInfo()->GetId()] = chatUser;
+	mChatUserDict[chatUser.GetClientId()] = chatUser;
 }

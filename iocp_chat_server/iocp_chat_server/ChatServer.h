@@ -16,10 +16,6 @@ class ChatServer
 public:
     ChatServer() = default;
     ~ChatServer() { WSACleanup(); };
-    //ChatServer(const ChatServer&) = delete;
-    //ChatServer(ChatServer&&) = delete;
-    //ChatServer& operator=(const ChatServer&) = delete;
-    //ChatServer& operator=(ChatServer&&) = delete;
 
     Error Init();
     void Run();
@@ -30,11 +26,10 @@ private:
     void RedisResponseThread();
     void SetReceivePacketThread();
     void ReceivePacketThread();
-    //void SetSendPacketThread();
     //void SendPacketThread();
     void Waiting();
     void SendPacket(UINT32 from, UINT32 to, UINT16 packetId, char* body, size_t bodySize);
-    //프로시저
+
     void RegisterRecvProc();
     void ProcessPacket(stPacket packet);
     void ProcEcho(stPacket packet);
@@ -47,10 +42,8 @@ private:
 private:
     std::thread	                mRedisResponseThread;
     std::thread	                mReceivePacketThread;
-    //std::vector<std::thread>    mSendPacketThreads;
     bool                        mRedisResponseRun = true;
     bool                        mReceivePacketRun = true;
-    //bool                        mSendPacketRun = true;
     std::unique_ptr<Network>    mNetwork;
 
     using receiver = void(ChatServer::*)(stPacket p);

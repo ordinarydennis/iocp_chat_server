@@ -1,24 +1,13 @@
 #include "ChatUser.h"
 #include "ClientInfo.h"
 
-ChatUser::ChatUser(std::string userId, ClientInfo* clientInfo)
+ChatUser::ChatUser(std::string userId, UINT32 clientId)
 {
 	mUserId = userId;
-	mClientInfo = clientInfo;
+	mClientId = clientId;
 }
-ChatUser::~ChatUser()
+
+void ChatUser::SetRoomNumber(UINT32 roomNumber)
 {
-	
-}
-std::string ChatUser::GetUserId() const
-{
-	return mUserId;
-}
-UINT32 ChatUser::GetClientId()
-{
-	return mClientInfo->GetId();
-}
-void ChatUser::SetRoom(Room* room)
-{
-	mRoom = room;
+	mRoomNumber = roomNumber;
 }
