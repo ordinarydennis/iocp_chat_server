@@ -80,17 +80,13 @@ void ChatServer::ProcRoomEnter(stPacket packet)
 	chatUser->SetRoomNumber(roomNumber);
 	mRoomManager.EnterRoom(roomNumber, chatUser);
 
-	ERROR_CODE result = ERROR_CODE::NONE;
-	size_t resBodySize = sizeof(result);
-	char resBody[MAX_SOCKBUF] = { 0, };
-	memcpy_s(resBody, resBodySize, &result, resBodySize);
-	
+	ResultResPacket resultResPacket(ERROR_CODE::NONE);
 	SendPacket(
 		packet.mClientFrom, 
 		packet.mClientFrom, 
 		static_cast<UINT16>(PacketID::ROOM_ENTER_RES),
-		resBody,
-		resBodySize
+		resultResPacket.GetBody(),
+		resultResPacket.GetBodySize()
 	);
 
 	//방 유저 리스트 내려주기
@@ -129,34 +125,22 @@ void ChatServer::ProcRoomChat(stPacket packet)
 		return;
 	}
 
-	char msg[MAX_CHAT_MSG_SIZE] = { 0, };
-	size_t msgLenth = strlen(packet.mBody);
-	memcpy_s(&msg, msgLenth, packet.mBody, msgLenth);
-	const size_t ntfBodySize = MAX_USER_ID_BYTE_LENGTH + MAX_CHAT_MSG_SIZE;
-	char ntfBody[ntfBodySize] = { 0, };
-	memcpy_s(ntfBody, chatUser->GetUserId().length(), chatUser->GetUserId().c_str(), chatUser->GetUserId().length());
-	memcpy_s(&ntfBody[MAX_USER_ID_BYTE_LENGTH], msgLenth, msg, msgLenth);
-
+	RoomChatReqPacket roomChatReqPacket(chatUser->GetUserId(), packet.mBody, strlen(packet.mBody));
 	room->Notify(
 		packet.mClientFrom,
 		static_cast<UINT16>(PacketID::ROOM_CHAT_NOTIFY),
-		ntfBody,
-		ntfBodySize,
+		roomChatReqPacket.GetBody(),
+		roomChatReqPacket.GetBodySize(),
 		mNetwork.get()
 	);
 
-
-	ERROR_CODE result = ERROR_CODE::NONE;
-	const size_t resBodySize = sizeof(result);
-	char resBody[resBodySize] = {0,};
-	memcpy_s(resBody, resBodySize, &result, resBodySize);
-
+	ResultResPacket resultResPacket(ERROR_CODE::NONE);
 	SendPacket(
 		packet.mClientFrom,
 		packet.mClientFrom,
 		static_cast<UINT16>(PacketID::ROOM_CHAT_RES),
-		resBody,
-		resBodySize
+		resultResPacket.GetBody(),
+		resultResPacket.GetBodySize()
 	);
 }
 
@@ -169,31 +153,24 @@ void ChatServer::ProcRoomLeave(stPacket packet)
 		return;
 	}
 
-	UINT64 userUniqueId = chatUser->GetClientId();
-	const size_t ntfBodySize = sizeof(userUniqueId);
-	char ntfBody[ntfBodySize] = { 0, };
-	memcpy_s(ntfBody, ntfBodySize, &userUniqueId, ntfBodySize);
+	RoomLeaveNTFPacket roomLeaveNTFPacket(chatUser->GetClientId());
 	room->Notify(
 		packet.mClientFrom,
 		static_cast<UINT16>(PacketID::ROOM_LEAVE_USER_NTF),
-		ntfBody,
-		ntfBodySize,
+		roomLeaveNTFPacket.GetBody(),
+		roomLeaveNTFPacket.GetBodySize(),
 		mNetwork.get()
 	);
 
 	room->RemoveUser(chatUser);
 	
-	ERROR_CODE result = ERROR_CODE::NONE;
-	const size_t resBodySize = sizeof(result);
-	char resBody[resBodySize] = { 0, };
-	memcpy_s(resBody, resBodySize, &result, resBodySize);
-
+	ResultResPacket resultResPacket(ERROR_CODE::NONE);
 	SendPacket(
 		packet.mClientFrom,
 		packet.mClientFrom,
 		static_cast<UINT16>(PacketID::ROOM_LEAVE_RES),
-		resBody,
-		resBodySize
+		resultResPacket.GetBody(),
+		resultResPacket.GetBodySize()
 	);
 }
 
@@ -257,16 +234,14 @@ void ChatServer::RedisResponseThread()
 
 		if (REDIS_TASK_ID::RESPONSE_LOGIN == task.GetTaskId())
 		{
-			LoginResRedisPacket loginResRedisPacket(task.GetClientId(), task.GetTaskId(), task.GetData(), task.GetDataSize());
-			ERROR_CODE loginResult = loginResRedisPacket.GetResult();
-			UINT16 bodySize = sizeof(loginResult);
-
+			LoginResRedisPacket loginResRedisPacket(task);
+			ResultResPacket resultResPacket(loginResRedisPacket.GetResult());
 			SendPacket(
 				task.GetClientId(),
 				task.GetClientId(),
 				static_cast<UINT16>(PacketID::LOGIN_RES),
-				reinterpret_cast<char*>(&loginResult),
-				bodySize
+				resultResPacket.GetBody(),
+				resultResPacket.GetBodySize()
 			);
 
 			if (ERROR_CODE::NONE == loginResRedisPacket.GetResult())

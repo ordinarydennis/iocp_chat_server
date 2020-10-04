@@ -25,15 +25,25 @@ private:
 	char mUserPw[MAX_USER_PW_BYTE_LENGTH] = { 0, };
 };
 
-//class LoginResPacket
-//{
-//public:
-//	void SetResult(ERROR_CODE result) { mResult = result; };
-//	ERROR_CODE GetResult() { return mResult; };
-//
-//private:
-//	ERROR_CODE mResult;
-//};
+class ResultResPacket
+{
+public:
+	ResultResPacket(ERROR_CODE result)
+	{
+		mResult = result;
+	}
+	char* GetBody()
+	{
+		return reinterpret_cast<char*>(&mResult);
+	}
+	size_t GetBodySize()
+	{
+		return sizeof(mResult);
+	}
+
+private:
+	ERROR_CODE mResult;
+};
 
 class RoomEnterReqPacket
 {
@@ -46,16 +56,6 @@ public:
 private:
 	UINT32 mRoomNumber = 0;
 };
-
-//class RoomEnterResPacket
-//{
-//public:
-//	void SetResult(ERROR_CODE result) { mResult = result; };
-//	ERROR_CODE GetResult() { return mResult; };
-//
-//private:
-//	ERROR_CODE mResult;
-//};
 
 class RoomUserListNTFPacket
 {
@@ -131,24 +131,49 @@ private:
 	char mBody[BODY_SIZE] = { 0, };
 };
 
-//class RoomChatReqPacket
-//{
-//public:
-//	RoomChatReqPacket(const char* buf)
-//	{
-//		memcpy_s(&chat, strlen(buf), buf, strlen(buf));
-//	}
-//	const char* GetChat() const { return chat; };
-//private:
-//	char chat[MAX_CHAT_MSG_SIZE] = { 0, };
-//};
+class RoomChatReqPacket
+{
+public:
+	RoomChatReqPacket(const std::string& userId, const char* msg, const size_t msgSize)
+	{
+		mUserid = userId;
+		memcpy_s(mBody, mUserid.length(), mUserid.c_str(), mUserid.length());
+		memcpy_s(&mBody[MAX_USER_ID_BYTE_LENGTH], msgSize, msg, msgSize);
+	}
+	const char* GetBody() 
+	{ 
+		return mBody;
+	}
 
-//class RoomChatResPacket
-//{
-//public:
-//	void SetResult(ERROR_CODE result) { mResult = result; };
-//	ERROR_CODE GetResult() { return mResult; };
-//
-//private:
-//	ERROR_CODE mResult;
-//};
+	const size_t GetBodySize()
+	{
+		return BODY_SIZE;
+	}
+
+private:
+	static const size_t BODY_SIZE = MAX_USER_ID_BYTE_LENGTH + MAX_CHAT_MSG_SIZE;
+
+	std::string mUserid;
+	char mBody[BODY_SIZE] = { 0, };
+};
+
+class RoomLeaveNTFPacket
+{
+public:
+	RoomLeaveNTFPacket(UINT64 uniqueId)
+	{
+		mUniqueId = uniqueId;
+	}
+	const char* GetBody()
+	{
+		return reinterpret_cast<char*>(&mUniqueId);
+	}
+
+	const size_t GetBodySize()
+	{
+		return sizeof(mUniqueId);
+	}
+
+private:
+	UINT64 mUniqueId = 0;
+};

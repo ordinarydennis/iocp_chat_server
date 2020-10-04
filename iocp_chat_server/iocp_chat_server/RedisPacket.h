@@ -52,12 +52,19 @@ private:
 class LoginResRedisPacket
 {
 public:
-	LoginResRedisPacket(UINT32 clientId, REDIS_TASK_ID redisTaskId, const char* data, size_t data_size)
+	LoginResRedisPacket(UINT32 clientId, REDIS_TASK_ID redisTaskId, const char* data)
 	{
 		mClientId = clientId;
 		mRedisTaskId = redisTaskId;
 		memcpy_s(mUserId, MAX_USER_ID_BYTE_LENGTH, data, MAX_USER_ID_BYTE_LENGTH);
 		memcpy_s(&mResult, sizeof(mResult), &data[MAX_USER_ID_BYTE_LENGTH], sizeof(mResult));
+	}
+	LoginResRedisPacket(const RedisTask& task)
+	{
+		mClientId = task.GetClientId();
+		mRedisTaskId = task.GetTaskId();
+		memcpy_s(mUserId, MAX_USER_ID_BYTE_LENGTH, task.GetData(), MAX_USER_ID_BYTE_LENGTH);
+		memcpy_s(&mResult, sizeof(mResult), &task.GetData()[MAX_USER_ID_BYTE_LENGTH], sizeof(mResult));
 	}
 	RedisTask GetTask()
 	{

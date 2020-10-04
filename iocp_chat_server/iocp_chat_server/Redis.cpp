@@ -76,7 +76,7 @@ void Redis::RedisThread()
 					memcpy_s(buf, strlen(reqPacket.GetUserId()), reqPacket.GetUserId(), strlen(reqPacket.GetUserId()));
 				}
 				memcpy_s(&buf[MAX_USER_ID_BYTE_LENGTH], sizeof(error_code), &error_code, sizeof(error_code));
-				LoginResRedisPacket resPacket(reqPacket.GetClientId(), REDIS_TASK_ID::RESPONSE_LOGIN, buf, bufSize);
+				LoginResRedisPacket resPacket(reqPacket.GetClientId(), REDIS_TASK_ID::RESPONSE_LOGIN, buf);
 				ResponseTask(resPacket.GetTask());
 			}
 
