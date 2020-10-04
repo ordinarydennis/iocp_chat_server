@@ -99,54 +99,23 @@ void ChatServer::ProcRoomEnter(stPacket packet)
 	UINT16 userCount = static_cast<UINT16>(userList->size()) -1; //자신은 제외
 	if (0 < userCount)
 	{
-		char userListBuf[MAX_SOCKBUF] = { 0, };
-		size_t userListBufSize = 0;
-		memcpy_s(userListBuf, 1, &userCount, 1);
-		userListBufSize++;
-		for (auto user : *userList)
-		{
-			UINT64 userUniqueId = user->GetClientId();
-			//자기 자신은 리스트에서 제외한다.
-			if (userUniqueId == chatUser->GetClientId())
-				continue;
-
-			const size_t userUniqueIdSize = sizeof(userUniqueId);
-			const size_t bodySize = userUniqueIdSize + MAX_USER_ID_BYTE_LENGTH;
-
-			char body[bodySize] = { 0, };
-			size_t idLen = user->GetUserId().length();
-			memcpy_s(body, userUniqueIdSize, &userUniqueId, userUniqueIdSize);
-			memcpy_s(&body[userUniqueIdSize], 1, &idLen, 1);
-			memcpy_s(&body[userUniqueIdSize + 1], user->GetUserId().length(), user->GetUserId().c_str(), user->GetUserId().length());
-
-			size_t userDataSize = userUniqueIdSize + 1 + user->GetUserId().length();
-			memcpy_s(&userListBuf[userListBufSize], userDataSize, body, userDataSize);
-			userListBufSize += userDataSize;
-		}
-
+		RoomUserListNTFPacket roomUserListNTFPacket(chatUser->GetClientId(), *userList);
 		SendPacket(
 			packet.mClientFrom,
 			packet.mClientFrom,
 			static_cast<UINT16>(PacketID::ROOM_USER_LIST_NTF),
-			userListBuf,
-			userListBufSize
+			roomUserListNTFPacket.GetBody(),
+			roomUserListNTFPacket.GetBodySize()
 		);
 	}
 
 	//방 유저들에게 노티
-	UINT64 newUserUniqueId = chatUser->GetClientId();
-	const size_t userUniqueIdSize = sizeof(newUserUniqueId);
-	const size_t bodySize2 = userUniqueIdSize + MAX_USER_ID_BYTE_LENGTH;
-	char body2[bodySize2] = { 0, };
-	size_t idLen = chatUser->GetUserId().length();
-	memcpy_s(body2, userUniqueIdSize, &newUserUniqueId, userUniqueIdSize);
-	memcpy_s(&body2[userUniqueIdSize], 1, &idLen, 1);
-	memcpy_s(&body2[userUniqueIdSize + 1], chatUser->GetUserId().length(), chatUser->GetUserId().c_str(), chatUser->GetUserId().length());
+	RoomEnterNTFPacket roomEnterNTFPacket(chatUser->GetClientId(), chatUser->GetUserId());
 	room->Notify(
-		static_cast<UINT32>(newUserUniqueId),
+		chatUser->GetClientId(),
 		static_cast<UINT16>(PacketID::ROOM_NEW_USER_NTF),
-		body2,
-		bodySize2,
+		roomEnterNTFPacket.GetBody(),
+		roomEnterNTFPacket.GetBodySize(),
 		mNetwork.get()
 	);
 }
