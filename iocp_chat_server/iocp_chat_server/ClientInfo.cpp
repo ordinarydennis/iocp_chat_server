@@ -72,7 +72,6 @@ void ClientInfo::AsyncAccept(SOCKET listenSocket)
 		return;
 	
 	UINT64 curTimeSec = GetCurTimeSec();
-	UINT64 A = GetLatestClosedTimeSec();
 	if (curTimeSec < GetLatestClosedTimeSec())
 		return;
 
@@ -132,21 +131,21 @@ stPacket ClientInfo::GetSendPacket()
 	return p;
 }
 
-void ClientInfo::AddRecvPacket(stPacket p)
+void ClientInfo::AddRecvPacket(const stPacket& packet)
 {
 	std::lock_guard<std::mutex> guard(mRecvPacketPoolLock);
-	mRecvPacketPool.push(p);
+	mRecvPacketPool.push(packet);
 }
 
-void ClientInfo::AddSendPacket(stPacket p)
+void ClientInfo::AddSendPacket(const stPacket& packet)
 {
 	std::lock_guard<std::mutex> guard(mSendPacketPoolLock);
-	mSendPacketPool.push_back(p);
+	mSendPacketPool.push_back(packet);
 }
-void ClientInfo::AddSendPacketAtFront(stPacket p)
+void ClientInfo::AddSendPacketAtFront(const stPacket& packet)
 {
 	std::lock_guard<std::mutex> guard(mSendPacketPoolLock);
-	mSendPacketPool.push_front(p);
+	mSendPacketPool.push_front(packet);
 }
 bool ClientInfo::PostAccept(SOCKET listenSocket, const UINT64 curTimeSec_)
 {

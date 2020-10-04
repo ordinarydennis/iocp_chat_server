@@ -6,14 +6,6 @@
 
 using namespace std::chrono;
 
-//TODO 최흥배
-// 코드는 가독성 좋게 만드는 것이 정말 좋습니다. 
-// 불필요한 코드(주석 포함)는 지우고 함수 정의간에 간격을 두기 바랍니다.
-
-//TODO 최흥배
-// 코드 전체적으로 함수에서 실패 값을 반환하지 않고, 이것을 처리하는 코드가 없습니다.
-// 이 부분 보완 바랍니다
-
 Error Network::Init(UINT16 SERVER_PORT)
 {
 	SetMaxThreadCount();
@@ -62,10 +54,6 @@ void Network::SetMaxThreadCount()
 	mMaxThreadCount = std::thread::hardware_concurrency() * 2 + 1;
 }
 
-//TODO: 최흥배 
-// WSAStartup는 소켓 API의 초기화 함수라서 이 함수의 이름만으로는 이런 것이 있을거라고 생각하기 힘듭니다. 따로 분리하는 것이 좋을 것 같습니다.
-// 함수 내부에서 실패가 2개 이상입니다. 에러를 반환하고, 에러도 어떤 종류인지 외부에서 알 수 있게 bool 타입보다는 enum이 더 좋습니다.
-//소켓을 초기화하는 함수
 Error Network::CreateListenSocket()
 {
 	mListenSocket = WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, NULL, WSA_FLAG_OVERLAPPED);
@@ -77,8 +65,6 @@ Error Network::CreateListenSocket()
 	return Error::NONE;
 }
 
-//TODO: 최흥배
-// 실패와 성공이 있으면 결과를 반환해 주세요
 Error Network::CreateIOCP()
 {
 	mIOCPHandle = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, NULL, mMaxThreadCount);
@@ -100,9 +86,6 @@ void Network::CreateClient(const UINT32 maxClientCount)
 	}
 }
 
-//TODO: 최흥배
-// 함수 이름과 달리 내부에서 IOCP 핸들에 등록도하고, Accept 함수 호출도 하고 있습니다. 분리하는 것이 좋습니다.
-// 실패와 성공이 있으면 결과를 반환해 주세요
 Error Network::BindandListen(UINT16 SERVER_PORT)
 {
 	SOCKADDR_IN stServerAddr;
@@ -217,8 +200,6 @@ void Network::WokerThread()
 		}
 		else if (IOOperation::SEND == pOverlappedEx->m_eOperation)
 		{
-			//TODO 최흥배
-			// Send 완료 이벤트를 처리해야 하지 않나요?
 			ProcSendOperation(pClientInfo, dwIoSize);
 		}
 		else
@@ -257,7 +238,6 @@ void Network::SendPacketThread()
 
 void Network::ProcAcceptOperation(stOverlappedEx* pOverlappedEx)
 {
-	//TODO: 에러 반환
 	ClientInfo* pClientInfo = GetClientInfo(pOverlappedEx->m_clientId);
 	if (nullptr == pClientInfo)
 	{
@@ -278,83 +258,20 @@ void Network::ProcAcceptOperation(stOverlappedEx* pOverlappedEx)
 	}
 
 	++mClientCnt;
-
-	//PSOCKADDR pRemoteSocketAddr = nullptr;
-	//PSOCKADDR pLocalSocketAddr = nullptr;
-	//INT pRemoteSocketAddrLength = 0;
-	//INT pLocalSocketAddrLength = 0;
-
-	//GetAcceptExSockaddrs(
-	//	pOverlappedEx->m_buffer, 0,
-	//	sizeof(SOCKADDR_IN) + 16, sizeof(SOCKADDR_IN) + 16,
-	//	&pLocalSocketAddr, &pLocalSocketAddrLength, &pRemoteSocketAddr, &pRemoteSocketAddrLength);
-
-	//SOCKADDR_IN remoteAddr = *(reinterpret_cast<PSOCKADDR_IN>(pRemoteSocketAddr));
-	////접속한 클라이언트 IP와 포트 정보 얻기
-	//char ip[24] = { 0, };
-	//inet_ntop(AF_INET, &remoteAddr.sin_addr, ip, sizeof(ip));
-	//printf("Accept New  IP %s PORT: %d \n", ip, ntohs(remoteAddr.sin_port));
-
-	//ClientInfo* pClientInfo = GetEmptyClientInfo();
-	//if (nullptr == pClientInfo)
-	//{
-	//	return;
-	//}
-
-	//pClientInfo->SetClientSocket(pOverlappedEx->m_clientSocket);
-	////I/O Completion Port객체와 소켓을 연결시킨다.
-	//bool bRet = BindIOCompletionPort(pClientInfo);
-	//if (false == bRet)
-	//{
-	//	return;
-	//}
-
-	////Recv Overlapped I/O작업을 요청해 놓는다.
-	//bRet = BindRecv(pClientInfo);
-	//if (false == bRet)
-	//{
-	//	return;
-	//}
-
-	////클라이언트 갯수 증가
-	//++mClientCnt;
-
-	////accept 다시 등록
-	//AsyncAccept(mListenSocket);
 }
 
-//TODO 최흥배
-// 받은 데이터를 애플리케이션에서 정의한 패킷으로 나누는 것은 애플리케이션 레이어에서 하는 것이 좋습니다. 여기서 하면 이 라이브러리는 특정 애플리케이션에 종속 되어 버립니다.
-// 버그라고 할 수 있는데 패킷이 뭉쳐 왔을 때는 아래 방식으로 하면 더 이상 클라이언트의 요청을 처리하지 못하게 됩니다.
 void Network::ProcRecvOperation(ClientInfo* pClientInfo, DWORD dwIoSize)
 {
-	//stPacketHeader header;
-	//memcpy_s(&header.mSize, sizeof(UINT16), pClientInfo->GetRecvBuf(), sizeof(UINT16));
-	//memcpy_s(&header.mPacket_id, sizeof(UINT16), &pClientInfo->GetRecvBuf()[2], sizeof(UINT16));
-
-	//TODO 최흥배
-	// 불필요하게 이중 복사를 합니다.
-	// stPacket 생성자에서도 또 복사를 하고 있네요
-	//char body[MAX_SOCKBUF] = { 0, };
-	//UINT32 bodySize = (UINT32)dwIoSize - PACKET_HEADER_SIZE;
-	//memcpy_s(body, bodySize, &pClientInfo->GetRecvBuf()[PACKET_HEADER_SIZE], bodySize);
-
-	//pClientInfo->AddRecvPacket(stPacket(pClientInfo->GetId(), 0, header, body, bodySize));
-
-	//AddToClientPoolRecvPacket(pClientInfo);
-
-	//BindRecv(pClientInfo);
-
 	AddToClientPoolRecvPacket(pClientInfo, dwIoSize);
 	BindRecv(pClientInfo);
 }
+
 void Network::ProcSendOperation(ClientInfo* pClientInfo, DWORD dwIoSize)
 {
 	if (dwIoSize != pClientInfo->GetLastSendPacket().mHeader.mSize)
 	{
 		//제대로 전송이 안됐다면 풀에 가장 앞에 추가하여 다시 보내도록 한다.
 		printf("[ERROR] 유저 %d 송신 실패.. %d 재전송 시도..\n", pClientInfo->GetId(), pClientInfo->GetLastSendPacket().mHeader.mPacket_id);
-		//TODO: 한줄로 개선
 		pClientInfo->AddSendPacketAtFront(pClientInfo->GetLastSendPacket());
 		AddToClientPoolSendPacket(pClientInfo);
 	}
@@ -460,28 +377,29 @@ void Network::AccepterThread()
 {
 	while (mIsAccepterRun)
 	{
-		//todo: SLEEP
 		for (auto& clientInfo : mClientInfos)
 		{
 			clientInfo.AsyncAccept(mListenSocket);
 		}
+
+		Sleep(50);
 	}
 }
 
-ClientInfo* Network::GetEmptyClientInfo()
-{
-	//TODO 최흥배
-	// 클라이언트 수가 많을 때는 사용하지 않는 객체를 찾는 것도 좀 부담 될 수 있으므로 
-	//사용하지 않는 객체의 인덱스 번호만 관리하고 있으면 쉽고 빠르게 찾을 수 있을 것 같습니다.
-	if (mIdleClientIds.empty())
-	{
-		return nullptr;
-	}
-	
-	UINT32 idleClientId = mIdleClientIds.front();
-	mIdleClientIds.pop();
-	return &mClientInfos[idleClientId];
-}
+//ClientInfo* Network::GetEmptyClientInfo()
+//{
+//	//TODO 최흥배
+//	// 클라이언트 수가 많을 때는 사용하지 않는 객체를 찾는 것도 좀 부담 될 수 있으므로 
+//	//사용하지 않는 객체의 인덱스 번호만 관리하고 있으면 쉽고 빠르게 찾을 수 있을 것 같습니다.
+//	if (mIdleClientIds.empty())
+//	{
+//		return nullptr;
+//	}
+//	
+//	UINT32 idleClientId = mIdleClientIds.front();
+//	mIdleClientIds.pop();
+//	return &mClientInfos[idleClientId];
+//}
 
 ClientInfo* Network::GetClientInfo(UINT32 id)
 {
@@ -526,29 +444,6 @@ void Network::AddToClientPoolRecvPacket(ClientInfo* c, size_t size)
 	mClientPoolRecvedPacket.push(std::make_pair(c, size));
 }
 
-BOOL Network::AsyncAccept(SOCKET listenSocket)
-{
-	BOOL ret = false;
-	
-	//ZeroMemory(&mAcceptOverlappedEx->m_wsaOverlapped, sizeof(mAcceptOverlappedEx->m_wsaOverlapped));
-	//ZeroMemory(mAcceptOverlappedEx->m_buffer, MAX_SOCKBUF);
-	//mAcceptOverlappedEx->m_eOperation = IOOperation::ACCEPT;
-	//mAcceptOverlappedEx->m_clientSocket = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
-
-	DWORD bytes = 0;
-	//ret = AcceptEx(
-	//	listenSocket, 
-	//	mAcceptOverlappedEx->m_clientSocket,
-	//	mAcceptOverlappedEx->m_buffer, 0,
-	//	sizeof(SOCKADDR_IN) + 16, 
-	//	sizeof(SOCKADDR_IN) + 16, 
-	//	&bytes, 
-	//	reinterpret_cast<LPOVERLAPPED>(&mAcceptOverlappedEx->m_wsaOverlapped)
-	//);
-
-	return ret;
-}
-
 ClientInfo* Network::GetClientSendingPacket()
 {
 	std::lock_guard<std::mutex> guard(mSendPacketLock);
@@ -557,16 +452,28 @@ ClientInfo* Network::GetClientSendingPacket()
 	return front;
 }
 
+void Network::SendPacket(const stPacket& packet)
+{
+	ClientInfo* clientInfo = GetClientInfo(packet.mClientTo);
+	if (nullptr == clientInfo)
+	{
+		return;
+	}
+
+	clientInfo->AddSendPacket(packet);
+	AddToClientPoolSendPacket(clientInfo);
+}
+
 bool Network::IsEmptyClientPoolSendPacket()
 {
 	std::lock_guard<std::mutex> guard(mSendPacketLock);
 	return mClientPoolSendingPacket.empty();
 }
 
-void Network::AddToClientPoolSendPacket(ClientInfo* c)
+void Network::AddToClientPoolSendPacket(ClientInfo* clientInfo)
 {
 	std::lock_guard<std::mutex> guard(mSendPacketLock);
-	mClientPoolSendingPacket.push(c);
+	mClientPoolSendingPacket.push(clientInfo);
 }
 
 void Network::SendData(stPacket packet)

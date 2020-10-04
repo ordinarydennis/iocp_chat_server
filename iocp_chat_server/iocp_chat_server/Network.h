@@ -16,12 +16,13 @@ public:
     void            Run();
     void            Destroy();
     void            SendData(stPacket packet);
-    void            AddToClientPoolSendPacket(ClientInfo * c);
+    void            AddToClientPoolSendPacket(ClientInfo * clientInfo);
     bool            IsEmptyClientPoolRecvPacket();
     bool            IsEmptyClientPoolSendPacket();
     ClientInfo*     GetClientInfo(UINT32 id);
     std::pair<ClientInfo*, size_t>     GetClientRecvedPacket();
     ClientInfo*     GetClientSendingPacket();
+    void            SendPacket(const stPacket& packet);
 
 private:
     void            SetMaxThreadCount();
@@ -43,12 +44,11 @@ private:
     void            SetAccepterThread();
     void            AccepterThread();
     void            CloseSocket(ClientInfo* pClientInfo, bool bIsForce = false);
-    ClientInfo*     GetEmptyClientInfo();
+    //ClientInfo*     GetEmptyClientInfo();
     bool            BindIOCompletionPort(ClientInfo* pClientInfo);
     bool            BindRecv(ClientInfo* pClientInfo);
     void            DestroyThread();
     void            AddToClientPoolRecvPacket(ClientInfo* c, size_t size);
-    BOOL            AsyncAccept(SOCKET listenSocket);
 
 private:
     UINT16                      mMaxThreadCount = 0;

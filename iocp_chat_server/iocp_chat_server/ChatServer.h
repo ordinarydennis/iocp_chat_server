@@ -44,11 +44,12 @@ private:
     std::thread	                mReceivePacketThread;
     bool                        mRedisResponseRun = true;
     bool                        mReceivePacketRun = true;
-    std::unique_ptr<Network>    mNetwork;
-
+    
     using receiver = void(ChatServer::*)(stPacket p);
+
     std::unordered_map<PacketID, receiver> mRecvPacketProcDict;
 
+    std::unique_ptr<Network>    mNetwork;
     std::unique_ptr<Redis>      mRedis;
     RoomManager                 mRoomManager;
     ChatUserManager             mChatUserManager;

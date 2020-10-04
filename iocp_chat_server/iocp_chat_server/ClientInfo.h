@@ -31,9 +31,9 @@ public:
 
 	void			SetId(UINT32 id) { mId = id; };
 	void			SetClientSocket(SOCKET clientSocket);
-	void			AddRecvPacket(stPacket p);
-	void			AddSendPacket(stPacket p);
-	void			AddSendPacketAtFront(stPacket p);
+	void			AddRecvPacket(const stPacket& packet);
+	void			AddSendPacket(const stPacket& packet);
+	void			AddSendPacketAtFront(const stPacket& packet);
 	void			SetRecvOverlappedEx(stOverlappedEx overlappedEx);
 	void			SetSendOverlappedEx(const stOverlappedEx& overlappedEx);
 	void			SetSending(bool bSending);
@@ -45,7 +45,7 @@ private:
 
 private:
 	INT32						mId = 0;
-	//TODO: stOverlappedEx에 있는걸로 대체하기
+
 	SOCKET						mClientSocket = INVALID_SOCKET;
 	stOverlappedEx				mAcceptOverlappedEx;
 	stOverlappedEx				mRecvOverlappedEx;
@@ -60,7 +60,6 @@ private:
 	stPacket					mLastSendPacket;
 	std::mutex                  mLastSendPacketLock;
 
-	//TODO: stOverlappedEx에 있는걸로 대체하기
 	char						mRecvBuf[MAX_SOCKBUF]	= { 0, };
 	char						mSendBuf[MAX_SOCKBUF]	= { 0, };
 	char						mAcceptBuf[64]			= { 0, };
