@@ -7,6 +7,7 @@
 #include <queue>
 #include <memory>
 #include <mutex>
+#include <optional>
 
 namespace RedisCpp
 {
@@ -24,11 +25,13 @@ public:
 	void Destroy();
 
 	void RequestTask(const RedisTask& task);
-	RedisTask GetResponseTask();
+	std::optional<RedisTask> GetResponseTask();
+	std::optional<RedisTask> GetRequestTask();
+
+	void ProcLogin(const RedisTask& task);
 
 private:
 	void ResponseTask(const RedisTask& task);
-	RedisTask GetRequestTask();
 	void RedisThread();
 
 private:
@@ -40,5 +43,6 @@ private:
 
 	std::mutex						mRequestTaskLock;
 	std::mutex						mResponseTaskLock;
+
 };
 

@@ -34,6 +34,8 @@ void ChatServer::RegisterRecvProc()
 	mRecvPacketProcDict[PacketID::ROOM_ENTER_REQ] = &ChatServer::ProcRoomEnter;
 	mRecvPacketProcDict[PacketID::ROOM_CHAT_REQ] = &ChatServer::ProcRoomChat;
 	mRecvPacketProcDict[PacketID::ROOM_LEAVE_REQ] = &ChatServer::ProcRoomLeave;
+
+	mRecvRedisPacketProcDict[REDIS_TASK_ID::REQUEST_LOGIN] = &Redis::ProcLogin;
 }
 
 void ChatServer::ProcEcho(stPacket packet)
@@ -44,7 +46,7 @@ void ChatServer::ProcEcho(stPacket packet)
 
 	packet.mClientTo = packet.mClientFrom;
 	clientInfo->AddSendPacket(packet);
-	mNetwork->AddToClientPoolSendPacket(clientInfo);
+	//mNetwork->AddToClientPoolSendPacket(clientInfo);
 }
 
 void ChatServer::ProcLogin(stPacket packet)
@@ -224,13 +226,14 @@ void ChatServer::RedisResponseThread()
 {
 	while (mRedisResponseRun)
 	{
-		RedisTask task = mRedis->GetResponseTask();
-
-		if (REDIS_TASK_ID::INVALID == task.GetTaskId())
+		auto taskOpt = mRedis->GetResponseTask();
+		if (false == taskOpt.has_value())
 		{
-			Sleep(50);
+			Sleep(1);
 			continue;
 		}
+
+		RedisTask task = taskOpt.value();
 
 		if (REDIS_TASK_ID::RESPONSE_LOGIN == task.GetTaskId())
 		{
@@ -253,6 +256,25 @@ void ChatServer::RedisResponseThread()
 	}
 }
 
+void ChatServer::ProcessRedisPacket(RedisTask task)
+{
+	auto reqTaskOpt = mRedis->GetRequestTask();
+	if (false == reqTaskOpt.has_value())
+	{
+		//Sleep(1);
+		//continue;
+	}
+
+	//RedisTask reqTask = reqTaskOpt.value();
+
+	//REDIS_TASK_ID taskId = static_cast<REDIS_TASK_ID>(reqTask.GetTaskId());
+	//auto iter = mRecvRedisPacketProcDict.find(taskId);
+	//if (iter != mRecvRedisPacketProcDict.end())
+	//{
+	//	(this->*(iter->second))(task);
+	//}
+}
+
 void ChatServer::SetReceivePacketThread()
 {
 	mReceivePacketThread = std::thread([this]() { ReceivePacketThread(); });
@@ -264,7 +286,7 @@ void ChatServer::ReceivePacketThread()
 	{
 		if (mNetwork->IsEmptyClientPoolRecvPacket())
 		{
-			Sleep(50);
+			Sleep(1);
 			continue;
 		}
 		
@@ -281,6 +303,8 @@ void ChatServer::ReceivePacketThread()
 		memcpy_s(body, bodySize, &pClientInfo->GetRecvBuf()[PACKET_HEADER_SIZE], bodySize);
 
 		ProcessPacket(stPacket(pClientInfo->GetId(), 0, header, body, bodySize));
+
+		//ProcessRedisPacket();
 	}
 }
 

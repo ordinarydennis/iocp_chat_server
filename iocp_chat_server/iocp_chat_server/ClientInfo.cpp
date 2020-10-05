@@ -93,17 +93,17 @@ void ClientInfo::SetLatestClosedTimeSec(UINT64 latestClosedTimeSec)
 	mLatestClosedTimeSec = latestClosedTimeSec;
 }
 
-stPacket ClientInfo::GetLastSendPacket()
-{
-	std::lock_guard<std::mutex> guard(mLastSendPacketLock);
-	return mLastSendPacket;
-}
+//stPacket ClientInfo::GetLastSendPacket()
+//{
+//	std::lock_guard<std::mutex> guard(mLastSendPacketLock);
+//	return mLastSendPacket;
+//}
 
-void ClientInfo::SetLastSendPacket(const stPacket& packet)
-{
-	std::lock_guard<std::mutex> guard(mLastSendPacketLock);
-	mLastSendPacket = packet;
-}
+//void ClientInfo::SetLastSendPacket(const stPacket& packet)
+//{
+//	std::lock_guard<std::mutex> guard(mLastSendPacketLock);
+//	mLastSendPacket = packet;
+//}
 
 stPacket ClientInfo::GetRecvPacket()
 {
@@ -118,17 +118,24 @@ stPacket ClientInfo::GetRecvPacket()
 	return p;
 }
 
-stPacket ClientInfo::GetSendPacket()
+std::optional<stPacket> ClientInfo::GetSendPacket()
 {
 	std::lock_guard<std::mutex> guard(mSendPacketPoolLock);
 	if (mSendPacketPool.empty())
 	{
-		return stPacket();
+		return std::nullopt;
 	}
 
-	stPacket p = mSendPacketPool.front();
-	mSendPacketPool.pop_front();
-	return p;
+	return mSendPacketPool.front();
+}
+
+void ClientInfo::PopSendPacketPool()
+{
+	std::lock_guard<std::mutex> guard(mSendPacketPoolLock);
+	if (false == mSendPacketPool.empty())
+	{
+		mSendPacketPool.pop_front();
+	}	
 }
 
 void ClientInfo::AddRecvPacket(const stPacket& packet)

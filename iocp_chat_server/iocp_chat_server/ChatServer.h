@@ -32,6 +32,7 @@ private:
 
     void RegisterRecvProc();
     void ProcessPacket(stPacket packet);
+    void ProcessRedisPacket(RedisTask task);
     void ProcEcho(stPacket packet);
     void ProcLogin(stPacket packet);
     void ProcRoomEnter(stPacket packet);
@@ -46,8 +47,10 @@ private:
     bool                        mReceivePacketRun = true;
     
     using receiver = void(ChatServer::*)(stPacket p);
-
     std::unordered_map<PacketID, receiver> mRecvPacketProcDict;
+
+    using redis_receiver = void(Redis::*)(const RedisTask& task);
+    std::unordered_map<REDIS_TASK_ID, redis_receiver> mRecvRedisPacketProcDict;
 
     std::unique_ptr<Network>    mNetwork;
     std::unique_ptr<Redis>      mRedis;

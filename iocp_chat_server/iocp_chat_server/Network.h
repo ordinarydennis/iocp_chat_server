@@ -6,6 +6,7 @@
 #include <vector>
 #include <queue>
 #include <mutex>
+#include <optional>
 
 class Network
 {
@@ -16,12 +17,13 @@ public:
     void            Run();
     void            Destroy();
     void            SendData(stPacket packet);
-    void            AddToClientPoolSendPacket(ClientInfo * clientInfo);
+    //void            AddToClientPoolSendPacket(ClientInfo * clientInfo);
     bool            IsEmptyClientPoolRecvPacket();
-    bool            IsEmptyClientPoolSendPacket();
+    //bool            IsEmptyClientPoolSendPacket();
     ClientInfo*     GetClientInfo(UINT32 id);
     std::pair<ClientInfo*, size_t>     GetClientRecvedPacket();
-    ClientInfo*     GetClientSendingPacket();
+    //std::optional<ClientInfo*> GetClientSendingPacket();
+    //ClientInfo*     GetClientSendingPacket();
     void            SendPacket(const stPacket& packet);
 
 private:
@@ -63,10 +65,10 @@ private:
     std::thread                 mAccepterThread;
     std::thread                 mSendPacketThread;
     std::vector<ClientInfo>     mClientInfos;
-    std::queue<UINT32>          mIdleClientIds;
+    //std::queue<UINT32>          mIdleClientIds;
 
     std::mutex                  mRecvPacketLock;
-    std::mutex                  mSendPacketLock;
-    std::queue<ClientInfo*>     mClientPoolSendingPacket;
+    //std::mutex                  mSendPacketLock;
+    //std::queue<ClientInfo*>     mClientPoolSendingPacket;
     std::queue<std::pair<ClientInfo*, size_t>>     mClientPoolRecvedPacket;
 };

@@ -18,7 +18,7 @@ public:
 
 private:
 	std::unordered_map<UINT32, Room>	mRoomDict;
-	std::mutex							mRoomDictLock;
+	//std::mutex							mRoomDictLock;
 	UINT32								mRoomCount = 0;
 };
 

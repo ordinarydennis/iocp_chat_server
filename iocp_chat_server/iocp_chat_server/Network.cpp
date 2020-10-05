@@ -82,7 +82,7 @@ void Network::CreateClient(const UINT32 maxClientCount)
 	{
 		mClientInfos.emplace_back(i);
 		mClientInfos[i].SetId(i);
-		mIdleClientIds.push(i);
+		//mIdleClientIds.push(i);
 	}
 }
 
@@ -218,21 +218,41 @@ void Network::SendPacketThread()
 {
 	while (mSendPacketRun)
 	{
-		if (IsEmptyClientPoolSendPacket())
+		//if (IsEmptyClientPoolSendPacket())
+		//{
+		//	Sleep(1);
+		//	continue;
+		//}
+
+		//ClientInfo* clientInfo = GetClientSendingPacket();
+		//stPacket p = clientInfo->GetSendPacket();
+
+		//while (clientInfo->IsSending())
+		//{
+		//	Sleep(1);
+		//}
+
+		for (UINT32 index = 0; index < mClientInfos.size(); index++)
 		{
-			Sleep(50);
-			continue;
+			ClientInfo* clientInfo = &mClientInfos[index];
+			if (clientInfo->IsSending())
+			{ 
+				continue;
+			}
+
+			auto sendPacketOpt = clientInfo->GetSendPacket();
+			if (false == sendPacketOpt.has_value())
+			{
+				continue;
+			}
+
+			stPacket sendingPacket = sendPacketOpt.value();
+
+			//clientInfo->PopSendPacketPool();
+			//clientInfo->SetLastSendPacket(p);
+			clientInfo->SetSending(true);
+			SendData(sendingPacket);
 		}
-
-		ClientInfo* clientInfo = GetClientSendingPacket();
-		stPacket p = clientInfo->GetSendPacket();
-
-		while (clientInfo->IsSending())
-			Sleep(50);
-
-		clientInfo->SetLastSendPacket(p);
-		clientInfo->SetSending(true);
-		SendData(p);
 	}
 }
 
@@ -268,18 +288,23 @@ void Network::ProcRecvOperation(ClientInfo* pClientInfo, DWORD dwIoSize)
 
 void Network::ProcSendOperation(ClientInfo* pClientInfo, DWORD dwIoSize)
 {
-	if (dwIoSize != pClientInfo->GetLastSendPacket().mHeader.mSize)
+	stPacket lastSendingPacket = pClientInfo->GetSendPacket().value();
+	if (dwIoSize != lastSendingPacket.mHeader.mSize)
 	{
 		//제대로 전송이 안됐다면 풀에 가장 앞에 추가하여 다시 보내도록 한다.
-		printf("[ERROR] 유저 %d 송신 실패.. %d 재전송 시도..\n", pClientInfo->GetId(), pClientInfo->GetLastSendPacket().mHeader.mPacket_id);
-		pClientInfo->AddSendPacketAtFront(pClientInfo->GetLastSendPacket());
-		AddToClientPoolSendPacket(pClientInfo);
+		//printf("[ERROR] 유저 %d 송신 실패.. %d 재전송 시도..\n", pClientInfo->GetId(), pClientInfo->GetLastSendPacket().mHeader.mPacket_id);
+	
+		//pClientInfo->AddSendPacketAtFront(pClientInfo->GetLastSendPacket());
+		//pClientInfo->AddSendPacketAtFront(pClientInfo->GetSendPacket().value());
+		//AddToClientPoolSendPacket(pClientInfo);
 	}
 	else
 	{
-		printf("유저 %d bytes : id : %d, size: %d 송신 완료\n", pClientInfo->GetId(), pClientInfo->GetLastSendPacket().mHeader.mPacket_id, dwIoSize);
+		//전송이 완료 됐을때만 pop
+		pClientInfo->PopSendPacketPool();
+		//printf("유저 %d bytes : id : %d, size: %d 송신 완료\n", pClientInfo->GetId(), pClientInfo->GetLastSendPacket().mHeader.mPacket_id, dwIoSize);
 	}
-	pClientInfo->SetLastSendPacket(stPacket());
+	//pClientInfo->SetLastSendPacket(stPacket());
 	pClientInfo->SetSending(false);
 }
 
@@ -304,7 +329,7 @@ void Network::CloseSocket(ClientInfo* pClientInfo, bool bIsForce)
 
 	//소켓 연결을 종료 시킨다. 
 	pClientInfo->CloseSocket();
-	mIdleClientIds.push(pClientInfo->GetId());
+	//mIdleClientIds.push(pClientInfo->GetId());
 }
 
 //WSASend Overlapped I/O작업을 시킨다.
@@ -382,7 +407,7 @@ void Network::AccepterThread()
 			clientInfo.AsyncAccept(mListenSocket);
 		}
 
-		Sleep(50);
+		Sleep(1);
 	}
 }
 
@@ -444,13 +469,25 @@ void Network::AddToClientPoolRecvPacket(ClientInfo* c, size_t size)
 	mClientPoolRecvedPacket.push(std::make_pair(c, size));
 }
 
-ClientInfo* Network::GetClientSendingPacket()
-{
-	std::lock_guard<std::mutex> guard(mSendPacketLock);
-	ClientInfo* front = mClientPoolSendingPacket.front();
-	mClientPoolSendingPacket.pop();
-	return front;
-}
+//std::optional<ClientInfo*> Network::GetClientSendingPacket()
+//{
+//	//std::lock_guard<std::mutex> guard(mSendPacketLock);
+//	//ClientInfo* front = mClientPoolSendingPacket.front();
+//	//mClientPoolSendingPacket.pop();
+//	//return front;
+//
+//	ClientInfo* ret = nullptr;
+//	for (auto& clientInfo : mClientInfos)
+//	{
+//		auto packet = clientInfo.GetSendPacket();
+//		if (packet.has_value())
+//		{
+//			return &clientInfo;
+//		}
+//	}
+//	
+//	return std::nullopt;
+//}
 
 void Network::SendPacket(const stPacket& packet)
 {
@@ -461,20 +498,20 @@ void Network::SendPacket(const stPacket& packet)
 	}
 
 	clientInfo->AddSendPacket(packet);
-	AddToClientPoolSendPacket(clientInfo);
+	//AddToClientPoolSendPacket(clientInfo);
 }
 
-bool Network::IsEmptyClientPoolSendPacket()
-{
-	std::lock_guard<std::mutex> guard(mSendPacketLock);
-	return mClientPoolSendingPacket.empty();
-}
+//bool Network::IsEmptyClientPoolSendPacket()
+//{
+//	std::lock_guard<std::mutex> guard(mSendPacketLock);
+//	return mClientPoolSendingPacket.empty();
+//}
 
-void Network::AddToClientPoolSendPacket(ClientInfo* clientInfo)
-{
-	std::lock_guard<std::mutex> guard(mSendPacketLock);
-	mClientPoolSendingPacket.push(clientInfo);
-}
+//void Network::AddToClientPoolSendPacket(ClientInfo* clientInfo)
+//{
+//	std::lock_guard<std::mutex> guard(mSendPacketLock);
+//	mClientPoolSendingPacket.push(clientInfo);
+//}
 
 void Network::SendData(stPacket packet)
 {
