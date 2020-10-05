@@ -60,7 +60,8 @@ void Redis::RedisThread()
 			ERROR_CODE error_code = ERROR_CODE::LOGIN_USER_INVALID_PW;
 
 			LoginReqRedisPacket reqPacket(reqTask);
-
+			const size_t bufSize = MAX_USER_ID_BYTE_LENGTH + sizeof(ERROR_CODE);
+			char buf[bufSize] = { 0, };
 			std::string pw;
 			if (mConn->get(reqPacket.GetUserId(), pw))
 			{
@@ -69,17 +70,15 @@ void Redis::RedisThread()
 					error_code = ERROR_CODE::NONE;
 				}
 
-				const size_t bufSize = MAX_USER_ID_BYTE_LENGTH + sizeof(ERROR_CODE);
-				char buf[bufSize] = { 0, };
 				if (ERROR_CODE::NONE == error_code)
 				{
 					memcpy_s(buf, strlen(reqPacket.GetUserId()), reqPacket.GetUserId(), strlen(reqPacket.GetUserId()));
 				}
-				memcpy_s(&buf[MAX_USER_ID_BYTE_LENGTH], sizeof(error_code), &error_code, sizeof(error_code));
-				LoginResRedisPacket resPacket(reqPacket.GetClientId(), REDIS_TASK_ID::RESPONSE_LOGIN, buf);
-				ResponseTask(resPacket.GetTask());
+				
 			}
-
+			memcpy_s(&buf[MAX_USER_ID_BYTE_LENGTH], sizeof(error_code), &error_code, sizeof(error_code));
+			LoginResRedisPacket resPacket(reqPacket.GetClientId(), REDIS_TASK_ID::RESPONSE_LOGIN, buf);
+			ResponseTask(resPacket.GetTask());
 		}
 	}
 }
