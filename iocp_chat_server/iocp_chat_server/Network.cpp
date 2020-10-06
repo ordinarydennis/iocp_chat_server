@@ -82,7 +82,6 @@ void Network::CreateClient(const UINT32 maxClientCount)
 	{
 		mClientInfos.emplace_back(i);
 		mClientInfos[i].SetId(i);
-		//mIdleClientIds.push(i);
 	}
 }
 
@@ -121,19 +120,6 @@ Error Network::RegisterListenSocketToIOCP()
 
 	return Error::NONE;
 }
-
-//Error Network::SetAsyncAccept()
-//{
-//	//TODO: 최흥배
-//	// 서버를 실행을 하자말자 많은 접속이 발생했을 때나 클라이언트 접속과 해제가 빈번한 경우를 잘 처리하기 위해 Accept를 최대 연결 수만큼 미리 요청할 수 있습니다.
-//	// 현재는 1개만 accept를 요청을 했는데 최대 연결 가능 수만큼 미리 accept 하도록 합니다.
-//	//if (SOCKET_ERROR == AsyncAccept(mListenSocket))
-//	//{
-//	//	printf("[에러] AsyncAccept()함수 실패 : %d", WSAGetLastError());
-//	//	return Error::SOCKET_ASYNC_ACCEPT;
-//	//}
-//	return Error::NONE;
-//}
 
 void Network::Run()
 {
@@ -218,38 +204,23 @@ void Network::SendPacketThread()
 {
 	while (mSendPacketRun)
 	{
-		//if (IsEmptyClientPoolSendPacket())
-		//{
-		//	Sleep(1);
-		//	continue;
-		//}
-
-		//ClientInfo* clientInfo = GetClientSendingPacket();
-		//stPacket p = clientInfo->GetSendPacket();
-
-		//while (clientInfo->IsSending())
-		//{
-		//	Sleep(1);
-		//}
-
 		for (UINT32 index = 0; index < mClientInfos.size(); index++)
 		{
 			ClientInfo* clientInfo = &mClientInfos[index];
 			if (clientInfo->IsSending())
 			{ 
+				//이미 전송중인 패킷이 있는 유저
 				continue;
 			}
 
 			auto sendPacketOpt = clientInfo->GetSendPacket();
 			if (false == sendPacketOpt.has_value())
 			{
+				//보낼 패킷이 없는 유저
 				continue;
 			}
 
 			stPacket sendingPacket = sendPacketOpt.value();
-
-			//clientInfo->PopSendPacketPool();
-			//clientInfo->SetLastSendPacket(p);
 			clientInfo->SetSending(true);
 			SendData(sendingPacket);
 		}
@@ -289,22 +260,17 @@ void Network::ProcRecvOperation(ClientInfo* pClientInfo, DWORD dwIoSize)
 void Network::ProcSendOperation(ClientInfo* pClientInfo, DWORD dwIoSize)
 {
 	stPacket lastSendingPacket = pClientInfo->GetSendPacket().value();
-	if (dwIoSize != lastSendingPacket.mHeader.mSize)
-	{
-		//제대로 전송이 안됐다면 풀에 가장 앞에 추가하여 다시 보내도록 한다.
-		//printf("[ERROR] 유저 %d 송신 실패.. %d 재전송 시도..\n", pClientInfo->GetId(), pClientInfo->GetLastSendPacket().mHeader.mPacket_id);
-	
-		//pClientInfo->AddSendPacketAtFront(pClientInfo->GetLastSendPacket());
-		//pClientInfo->AddSendPacketAtFront(pClientInfo->GetSendPacket().value());
-		//AddToClientPoolSendPacket(pClientInfo);
-	}
-	else
+	if (dwIoSize == lastSendingPacket.mHeader.mSize)
 	{
 		//전송이 완료 됐을때만 pop
 		pClientInfo->PopSendPacketPool();
-		//printf("유저 %d bytes : id : %d, size: %d 송신 완료\n", pClientInfo->GetId(), pClientInfo->GetLastSendPacket().mHeader.mPacket_id, dwIoSize);
+
 	}
-	//pClientInfo->SetLastSendPacket(stPacket());
+	else
+	{
+		printf("[ERROR] 유저 %d 송신 실패.. 재전송 시도..\n", pClientInfo->GetId());
+	}
+
 	pClientInfo->SetSending(false);
 }
 
@@ -329,7 +295,6 @@ void Network::CloseSocket(ClientInfo* pClientInfo, bool bIsForce)
 
 	//소켓 연결을 종료 시킨다. 
 	pClientInfo->CloseSocket();
-	//mIdleClientIds.push(pClientInfo->GetId());
 }
 
 //WSASend Overlapped I/O작업을 시킨다.
@@ -411,21 +376,6 @@ void Network::AccepterThread()
 	}
 }
 
-//ClientInfo* Network::GetEmptyClientInfo()
-//{
-//	//TODO 최흥배
-//	// 클라이언트 수가 많을 때는 사용하지 않는 객체를 찾는 것도 좀 부담 될 수 있으므로 
-//	//사용하지 않는 객체의 인덱스 번호만 관리하고 있으면 쉽고 빠르게 찾을 수 있을 것 같습니다.
-//	if (mIdleClientIds.empty())
-//	{
-//		return nullptr;
-//	}
-//	
-//	UINT32 idleClientId = mIdleClientIds.front();
-//	mIdleClientIds.pop();
-//	return &mClientInfos[idleClientId];
-//}
-
 ClientInfo* Network::GetClientInfo(UINT32 id)
 {
 	return id >= MAX_CLIENT ? nullptr : &mClientInfos.at(id);
@@ -449,18 +399,17 @@ bool Network::BindIOCompletionPort(ClientInfo* pClientInfo)
 	return true;
 }
 
-std::pair<ClientInfo*, size_t> Network::GetClientRecvedPacket()
+std::optional<std::pair<ClientInfo*, size_t>> Network::GetClientRecvedPacket()
 {
 	std::lock_guard<std::mutex> guard(mRecvPacketLock);
+	if (mClientPoolRecvedPacket.empty())
+	{
+		return std::nullopt;
+	}
+	
 	std::pair<ClientInfo*, size_t> front = mClientPoolRecvedPacket.front();
 	mClientPoolRecvedPacket.pop();
 	return front;
-}
-
-bool Network::IsEmptyClientPoolRecvPacket()
-{
-	std::lock_guard<std::mutex> guard(mRecvPacketLock);
-	return mClientPoolRecvedPacket.empty();
 }
 
 void Network::AddToClientPoolRecvPacket(ClientInfo* c, size_t size)
@@ -468,26 +417,6 @@ void Network::AddToClientPoolRecvPacket(ClientInfo* c, size_t size)
 	std::lock_guard<std::mutex> guard(mRecvPacketLock);
 	mClientPoolRecvedPacket.push(std::make_pair(c, size));
 }
-
-//std::optional<ClientInfo*> Network::GetClientSendingPacket()
-//{
-//	//std::lock_guard<std::mutex> guard(mSendPacketLock);
-//	//ClientInfo* front = mClientPoolSendingPacket.front();
-//	//mClientPoolSendingPacket.pop();
-//	//return front;
-//
-//	ClientInfo* ret = nullptr;
-//	for (auto& clientInfo : mClientInfos)
-//	{
-//		auto packet = clientInfo.GetSendPacket();
-//		if (packet.has_value())
-//		{
-//			return &clientInfo;
-//		}
-//	}
-//	
-//	return std::nullopt;
-//}
 
 void Network::SendPacket(const stPacket& packet)
 {
@@ -498,20 +427,12 @@ void Network::SendPacket(const stPacket& packet)
 	}
 
 	clientInfo->AddSendPacket(packet);
-	//AddToClientPoolSendPacket(clientInfo);
 }
 
-//bool Network::IsEmptyClientPoolSendPacket()
-//{
-//	std::lock_guard<std::mutex> guard(mSendPacketLock);
-//	return mClientPoolSendingPacket.empty();
-//}
-
-//void Network::AddToClientPoolSendPacket(ClientInfo* clientInfo)
-//{
-//	std::lock_guard<std::mutex> guard(mSendPacketLock);
-//	mClientPoolSendingPacket.push(clientInfo);
-//}
+std::function<void(stPacket)> Network::GetPacketSender()
+{
+	return std::bind(&Network::SendPacket, this, std::placeholders::_1);
+}
 
 void Network::SendData(stPacket packet)
 {

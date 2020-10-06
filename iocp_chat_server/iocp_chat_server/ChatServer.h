@@ -15,7 +15,7 @@ class ChatServer
 {
 public:
     ChatServer() = default;
-    ~ChatServer() { WSACleanup(); };
+    ~ChatServer();
 
     Error Init();
     void Run();
@@ -26,12 +26,11 @@ private:
     void RedisResponseThread();
     void SetReceivePacketThread();
     void ReceivePacketThread();
-    //void SendPacketThread();
     void Waiting();
     void SendPacket(UINT32 from, UINT32 to, UINT16 packetId, char* body, size_t bodySize);
 
     void RegisterRecvProc();
-    void ProcessPacket(stPacket packet);
+    void ProcessPacket(std::pair<ClientInfo*, size_t> packet);
     void ProcessRedisPacket(RedisTask task);
     void ProcEcho(stPacket packet);
     void ProcLogin(stPacket packet);

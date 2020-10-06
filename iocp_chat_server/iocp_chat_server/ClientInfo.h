@@ -13,7 +13,6 @@ public:
 	UINT32			GetId() const { return mId;  };
 	SOCKET			GetClientSocket() { return mClientSocket; }
 	stPacket		GetRecvPacket();
-	//stPacket		GetSendPacket();
 	std::optional<stPacket>	GetSendPacket();
 	void			PopSendPacketPool();
 	bool			IsSending();
@@ -23,9 +22,6 @@ public:
 	bool			IsConnecting();
 	void			CloseSocket();
 	void			AsyncAccept(SOCKET listenSocket);
-
-	//stPacket		GetLastSendPacket();
-	//void			SetLastSendPacket(const stPacket& packet);
 
 	stOverlappedEx*	GetRecvOverlappedEx() { return &mRecvOverlappedEx; };
 	stOverlappedEx*	GetSendOverlappedEx() { return &mSendOverlappedEx; };
@@ -59,9 +55,6 @@ private:
 
 	std::mutex                  mRecvPacketPoolLock;
 	std::mutex                  mSendPacketPoolLock;
-
-	//stPacket					mLastSendPacket;
-	//std::mutex                  mLastSendPacketLock;
 
 	char						mRecvBuf[MAX_SOCKBUF]	= { 0, };
 	char						mSendBuf[MAX_SOCKBUF]	= { 0, };

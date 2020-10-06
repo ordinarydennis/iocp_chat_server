@@ -8,6 +8,11 @@
 #include <string>
 #include <iostream>
 
+ChatServer::~ChatServer()
+{
+	WSACleanup();
+}
+
 Error ChatServer::Init()
 {
 	Error error = Error::NONE;
@@ -46,7 +51,6 @@ void ChatServer::ProcEcho(stPacket packet)
 
 	packet.mClientTo = packet.mClientFrom;
 	clientInfo->AddSendPacket(packet);
-	//mNetwork->AddToClientPoolSendPacket(clientInfo);
 }
 
 void ChatServer::ProcLogin(stPacket packet)
@@ -114,7 +118,7 @@ void ChatServer::ProcRoomEnter(stPacket packet)
 		static_cast<UINT16>(PacketID::ROOM_NEW_USER_NTF),
 		roomEnterNTFPacket.GetBody(),
 		roomEnterNTFPacket.GetBodySize(),
-		mNetwork.get()
+		mNetwork->GetPacketSender()
 	);
 }
 
@@ -133,7 +137,7 @@ void ChatServer::ProcRoomChat(stPacket packet)
 		static_cast<UINT16>(PacketID::ROOM_CHAT_NOTIFY),
 		roomChatReqPacket.GetBody(),
 		roomChatReqPacket.GetBodySize(),
-		mNetwork.get()
+		mNetwork->GetPacketSender()
 	);
 
 	ResultResPacket resultResPacket(ERROR_CODE::NONE);
@@ -156,12 +160,13 @@ void ChatServer::ProcRoomLeave(stPacket packet)
 	}
 
 	RoomLeaveNTFPacket roomLeaveNTFPacket(chatUser->GetClientId());
+
 	room->Notify(
 		packet.mClientFrom,
 		static_cast<UINT16>(PacketID::ROOM_LEAVE_USER_NTF),
 		roomLeaveNTFPacket.GetBody(),
 		roomLeaveNTFPacket.GetBodySize(),
-		mNetwork.get()
+		mNetwork->GetPacketSender()
 	);
 
 	room->RemoveUser(chatUser);
@@ -256,25 +261,6 @@ void ChatServer::RedisResponseThread()
 	}
 }
 
-void ChatServer::ProcessRedisPacket(RedisTask task)
-{
-	auto reqTaskOpt = mRedis->GetRequestTask();
-	if (false == reqTaskOpt.has_value())
-	{
-		//Sleep(1);
-		//continue;
-	}
-
-	//RedisTask reqTask = reqTaskOpt.value();
-
-	//REDIS_TASK_ID taskId = static_cast<REDIS_TASK_ID>(reqTask.GetTaskId());
-	//auto iter = mRecvRedisPacketProcDict.find(taskId);
-	//if (iter != mRecvRedisPacketProcDict.end())
-	//{
-	//	(this->*(iter->second))(task);
-	//}
-}
-
 void ChatServer::SetReceivePacketThread()
 {
 	mReceivePacketThread = std::thread([this]() { ReceivePacketThread(); });
@@ -284,37 +270,59 @@ void ChatServer::ReceivePacketThread()
 {
 	while (mReceivePacketRun)
 	{
-		if (mNetwork->IsEmptyClientPoolRecvPacket())
+		bool isPacket = false;
+
+		auto recvedPacketInfoOpt = mNetwork->GetClientRecvedPacket();
+		if (recvedPacketInfoOpt.has_value())
 		{
-			Sleep(1);
-			continue;
+			isPacket = true;
+			ProcessPacket(recvedPacketInfoOpt.value());
 		}
 		
-		std::pair<ClientInfo*, size_t> recvedPacketInfo = mNetwork->GetClientRecvedPacket();
-		ClientInfo* pClientInfo = recvedPacketInfo.first;
-		size_t dwIoSize = recvedPacketInfo.second;
+		auto reqTaskOpt = mRedis->GetRequestTask();
+		if (reqTaskOpt.has_value())
+		{
+			isPacket = true;
+			ProcessRedisPacket(reqTaskOpt.value());
+		}
 
-		stPacketHeader header;
-		memcpy_s(&header.mSize, sizeof(UINT16), pClientInfo->GetRecvBuf(), sizeof(UINT16));
-		memcpy_s(&header.mPacket_id, sizeof(UINT16), &pClientInfo->GetRecvBuf()[2], sizeof(UINT16));
-
-		char body[MAX_SOCKBUF] = { 0, };
-		UINT32 bodySize = (UINT32)dwIoSize - PACKET_HEADER_SIZE;
-		memcpy_s(body, bodySize, &pClientInfo->GetRecvBuf()[PACKET_HEADER_SIZE], bodySize);
-
-		ProcessPacket(stPacket(pClientInfo->GetId(), 0, header, body, bodySize));
-
-		//ProcessRedisPacket();
+		if (false == isPacket)
+		{
+			Sleep(1);
+		}
 	}
 }
 
-void ChatServer::ProcessPacket(stPacket p)
+void ChatServer::ProcessPacket(std::pair<ClientInfo*, size_t> recvedPacketInfo)
 {
-	PacketID packetId = static_cast<PacketID>(p.mHeader.mPacket_id);
+	ClientInfo* pClientInfo = recvedPacketInfo.first;
+	size_t dwIoSize = recvedPacketInfo.second;
+
+	stPacketHeader header;
+	memcpy_s(&header.mSize, sizeof(UINT16), pClientInfo->GetRecvBuf(), sizeof(UINT16));
+	memcpy_s(&header.mPacket_id, sizeof(UINT16), &pClientInfo->GetRecvBuf()[2], sizeof(UINT16));
+
+	char body[MAX_SOCKBUF] = { 0, };
+	UINT32 bodySize = (UINT32)dwIoSize - PACKET_HEADER_SIZE;
+	memcpy_s(body, bodySize, &pClientInfo->GetRecvBuf()[PACKET_HEADER_SIZE], bodySize);
+
+	stPacket packet(pClientInfo->GetId(), 0, header, body, bodySize);
+
+	PacketID packetId = static_cast<PacketID>(packet.mHeader.mPacket_id);
 	auto iter = mRecvPacketProcDict.find(packetId);
 	if (iter != mRecvPacketProcDict.end())
 	{
-		(this->*(iter->second))(p);
+		(this->*(iter->second))(packet);
+	}
+}
+
+void ChatServer::ProcessRedisPacket(RedisTask task)
+{
+	REDIS_TASK_ID taskId = static_cast<REDIS_TASK_ID>(task.GetTaskId());
+	auto iter = mRecvRedisPacketProcDict.find(taskId);
+	if (iter != mRecvRedisPacketProcDict.end())
+	{
+		(mRedis.get()->*(iter->second))(task);
 	}
 }
 

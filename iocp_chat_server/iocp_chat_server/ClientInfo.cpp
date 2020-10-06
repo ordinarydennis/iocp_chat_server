@@ -93,18 +93,6 @@ void ClientInfo::SetLatestClosedTimeSec(UINT64 latestClosedTimeSec)
 	mLatestClosedTimeSec = latestClosedTimeSec;
 }
 
-//stPacket ClientInfo::GetLastSendPacket()
-//{
-//	std::lock_guard<std::mutex> guard(mLastSendPacketLock);
-//	return mLastSendPacket;
-//}
-
-//void ClientInfo::SetLastSendPacket(const stPacket& packet)
-//{
-//	std::lock_guard<std::mutex> guard(mLastSendPacketLock);
-//	mLastSendPacket = packet;
-//}
-
 stPacket ClientInfo::GetRecvPacket()
 {
 	std::lock_guard<std::mutex> guard(mRecvPacketPoolLock);

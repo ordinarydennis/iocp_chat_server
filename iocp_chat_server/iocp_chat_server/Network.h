@@ -7,6 +7,7 @@
 #include <queue>
 #include <mutex>
 #include <optional>
+#include <functional>
 
 class Network
 {
@@ -17,14 +18,10 @@ public:
     void            Run();
     void            Destroy();
     void            SendData(stPacket packet);
-    //void            AddToClientPoolSendPacket(ClientInfo * clientInfo);
-    bool            IsEmptyClientPoolRecvPacket();
-    //bool            IsEmptyClientPoolSendPacket();
     ClientInfo*     GetClientInfo(UINT32 id);
-    std::pair<ClientInfo*, size_t>     GetClientRecvedPacket();
-    //std::optional<ClientInfo*> GetClientSendingPacket();
-    //ClientInfo*     GetClientSendingPacket();
+    std::optional<std::pair<ClientInfo*, size_t>>     GetClientRecvedPacket();
     void            SendPacket(const stPacket& packet);
+    std::function<void(stPacket)> GetPacketSender();
 
 private:
     void            SetMaxThreadCount();
@@ -46,7 +43,6 @@ private:
     void            SetAccepterThread();
     void            AccepterThread();
     void            CloseSocket(ClientInfo* pClientInfo, bool bIsForce = false);
-    //ClientInfo*     GetEmptyClientInfo();
     bool            BindIOCompletionPort(ClientInfo* pClientInfo);
     bool            BindRecv(ClientInfo* pClientInfo);
     void            DestroyThread();
@@ -65,10 +61,7 @@ private:
     std::thread                 mAccepterThread;
     std::thread                 mSendPacketThread;
     std::vector<ClientInfo>     mClientInfos;
-    //std::queue<UINT32>          mIdleClientIds;
 
     std::mutex                  mRecvPacketLock;
-    //std::mutex                  mSendPacketLock;
-    //std::queue<ClientInfo*>     mClientPoolSendingPacket;
     std::queue<std::pair<ClientInfo*, size_t>>     mClientPoolRecvedPacket;
 };

@@ -30,7 +30,6 @@ enum class PacketID : UINT16
 {
 	DEV_ECHO = 1,
 
-	// ·Î±×ÀÎ
 	LOGIN_REQ = 201,
 	LOGIN_RES = 202,
 
@@ -47,6 +46,7 @@ enum class PacketID : UINT16
 	ROOM_CHAT_RES = 222,
 	ROOM_CHAT_NOTIFY = 223,
 };
+
 enum class IOOperation
 {
 	NONE,

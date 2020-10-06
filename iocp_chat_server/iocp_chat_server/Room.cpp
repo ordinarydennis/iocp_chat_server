@@ -18,7 +18,7 @@ void Room::RemoveUser(ChatUser* chatUser)
 	mUserList.remove(chatUser);
 }
 
-void Room::Notify(UINT32 clientFrom, UINT16 packetId, const char* body, size_t bodySize, Network* network)
+void Room::Notify(UINT32 clientFrom, UINT16 packetId, const char* body, size_t bodySize, std::function<void(stPacket)> packetSender)
 {
 	stPacketHeader header;
 	header.mSize = static_cast<UINT16>(bodySize + PACKET_HEADER_SIZE);
@@ -26,7 +26,7 @@ void Room::Notify(UINT32 clientFrom, UINT16 packetId, const char* body, size_t b
 
 	for (ChatUser* user : mUserList)
 	{
-		network->SendPacket(
+		packetSender(
 			stPacket(
 				clientFrom,
 				user->GetClientId(),
