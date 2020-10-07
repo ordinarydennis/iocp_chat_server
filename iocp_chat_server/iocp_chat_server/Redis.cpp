@@ -48,6 +48,8 @@ void Redis::RedisThread()
 	while (mIsThreadRun)
 	{
 		auto reqTaskOpt = GetRequestTask();
+		//TODO 최흥배
+		// std::nullopt 로 비교해야 좋을 것 같습니다. GetRequestTask() 에서 std::nullopt를 반환하니 
 		if (false == reqTaskOpt.has_value())
 		{
 			Sleep(1);
@@ -56,7 +58,8 @@ void Redis::RedisThread()
 
 		RedisTask reqTask = reqTaskOpt.value();
 
-
+		//TODO 최흥배
+		//장래에 복수의 case에서도 처리될 수 있도록 구조화 하기 바랍니다. 패킷 처리쪽처럼
 		if (REDIS_TASK_ID::REQUEST_LOGIN == reqTask.GetTaskId())
 		{
 			ERROR_CODE error_code = ERROR_CODE::LOGIN_USER_INVALID_PW;
@@ -67,6 +70,8 @@ void Redis::RedisThread()
 			std::string pw;
 			if (mConn->get(reqPacket.GetUserId(), pw))
 			{
+				//TODO 최흥배
+				// 아래 2개의 if문은 하나로 합치죠
 				if (pw.compare(reqPacket.GetUserPw()) == 0)
 				{
 					error_code = ERROR_CODE::NONE;
@@ -102,6 +107,8 @@ void Redis::ProcLogin(const RedisTask& task)
 
 		if (ERROR_CODE::NONE == error_code)
 		{
+			//TODO 최흥배
+			// 안전하지 않은 strlen는 사용하지 말고 안전한 함수를 사용합니다.
 			memcpy_s(buf, strlen(reqPacket.GetUserId()), reqPacket.GetUserId(), strlen(reqPacket.GetUserId()));
 		}
 

@@ -43,6 +43,10 @@ void ChatServer::RegisterRecvProc()
 	mRecvRedisPacketProcDict[REDIS_TASK_ID::REQUEST_LOGIN] = &Redis::ProcLogin;
 }
 
+//TODO 최흥배
+// 각 패킷 처리 코드는 다른 파일로 분리하기 바랍니다.
+// 이 클래스에서 정의하면 클래스나 파일이 너무 크집니다.
+// 현재는 채팅서버만을 생각하면 그런대로 괜찮지만 이 구조를 그대로 게임서버로 가져가는 경우 코드 유지 보수에 좋지 않습니다.
 void ChatServer::ProcEcho(stPacket packet)
 {
 	ClientInfo* clientInfo = mNetwork->GetClientInfo(packet.mClientFrom);

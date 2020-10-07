@@ -85,6 +85,8 @@ void Network::CreateClient(const UINT32 maxClientCount)
 	}
 }
 
+//TODO 최흥배
+// 변수 이름 일관성을 지켜주세요~
 Error Network::BindandListen(UINT16 SERVER_PORT)
 {
 	SOCKADDR_IN stServerAddr;
@@ -259,6 +261,9 @@ void Network::ProcRecvOperation(ClientInfo* pClientInfo, DWORD dwIoSize)
 
 void Network::ProcSendOperation(ClientInfo* pClientInfo, DWORD dwIoSize)
 {
+	//TODO 최흥배
+	// 데이터를 다 보내었는지 조사하는데 send 패킷 풀에서 데이터를 뺄 필요가 없습니다.
+	// 이 함수를 호출하는 stOverlappedEx에 보면 이미 보낼 데이터를 가리키는 포인터와 보내는 양이 기록 되어 있습니다.	
 	stPacket lastSendingPacket = pClientInfo->GetSendPacket().value();
 	if (dwIoSize == lastSendingPacket.mHeader.mSize)
 	{
@@ -297,6 +302,8 @@ void Network::CloseSocket(ClientInfo* pClientInfo, bool bIsForce)
 	pClientInfo->CloseSocket();
 }
 
+//TODO 최흥배
+// 비동기 요청을 호출하는 함수 이름에는 대부분 Post를 붙였으니 여기도 함수 이름에 Post를 붙이는 것이 일관성이 있지 않을까요?
 //WSASend Overlapped I/O작업을 시킨다.
 bool Network::SendMsg(ClientInfo* pClientInfo, char* pMsg, UINT32 len)
 {
@@ -328,11 +335,17 @@ bool Network::SendMsg(ClientInfo* pClientInfo, char* pMsg, UINT32 len)
 	return true;
 }
 
+//TODO 최흥배
+// 비동기 요청에는 보통 Post나 혹은 Begin 또는 Async를 붙입니다. Bind는 그 뜻이 너무 다른 것 같습니다.
 //WSARecv Overlapped I/O 작업을 시킨다.
 bool Network::BindRecv(ClientInfo* pClientInfo)
 {
 	DWORD dwFlag = 0;
 	DWORD dwRecvNumBytes = 0;
+
+	//TODO 최흥배
+	// 아래 버그입니다.
+	// 받기를 완료하면 버퍼의 주소를 패킷처리 스레드로 넘기는데 만약 패킷 처리 스레드가 이 데이터를 처리하기 전에 해당 클라이언트가 패킷을 보내면 앞에 보낸 데이터를 덮어쓰게 됩니다.
 
 	//Overlapped I/O을 위해 각 정보를 셋팅해 준다.
 	pClientInfo->GetRecvOverlappedEx()->m_wsaBuf.len = MAX_SOCKBUF;

@@ -84,6 +84,8 @@ void ClientInfo::AsyncAccept(SOCKET listenSocket)
 
 void ClientInfo::SetIsConnecting(bool isConnecting)
 {
+	//TODO 최흥배 
+	// mIsConnectingLick 오타인 것 같네요
 	std::lock_guard<std::mutex> guard(mIsConnectingLick);
 	mIsConnecting = isConnecting;
 }

@@ -5,6 +5,10 @@
 #include "Packet.h"
 #include "Define.h"
 
+//TODO 최흥배
+//이 방법 조금 위험한 것 같습니다. 보통 자주 사용하는 방법도 아니고요
+//이 클래스의 외부에서 멤버변수에 값을 채우고, 이 클래스의 encoding(함수 이름은 원하는대로) 함수를 호출하면 버퍼에 데이터를 쓰고, decoding을 하면 버퍼에서 멤버 변수에 값을 넣도록 하는 것이 일반적입니다.
+//그리고 이것으 클래스가 어떤 동작을 가지고 있는 것보다 데이터를 가지고 있는 것이 목적입니다. class 보다 struct가 더 좋습니다.
 class LoginReqRedisPacket
 {
 public:
@@ -45,6 +49,10 @@ private:
 
 	UINT32 mClientId = 0;
 	REDIS_TASK_ID mRedisTaskId = REDIS_TASK_ID::INVALID;
+
+	//TODO 최흥배
+	// 아래 변수를 그대로 문자열 비교에 사용한다면 널문자가 들어갈 공간도 필요합니다.
+	// 최대 숫자에 1을 더 해야 합니다.
 	char mUserId[MAX_USER_ID_BYTE_LENGTH] = { 0, };
 	char mUserPw[MAX_USER_PW_BYTE_LENGTH] = { 0, };
 };
