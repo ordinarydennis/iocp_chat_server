@@ -50,6 +50,12 @@
     <ClCompile Include="Define.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="PacketProcessor.cpp">
+      <Filter>Source Files\Private</Filter>
+    </ClCompile>
+    <ClCompile Include="RedisProcessor.cpp">
+      <Filter>Source Files\Private</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ChatServer.h">
@@ -98,6 +104,12 @@
       <Filter>Source Files\Public</Filter>
     </ClInclude>
     <ClInclude Include="ChatUserManager.h">
+      <Filter>Source Files\Public</Filter>
+    </ClInclude>
+    <ClInclude Include="PacketProcessor.h">
+      <Filter>Source Files\Public</Filter>
+    </ClInclude>
+    <ClInclude Include="RedisProcessor.h">
       <Filter>Source Files\Public</Filter>
     </ClInclude>
   </ItemGroup>

@@ -19,7 +19,7 @@ public:
 		memcpy_s(mUserId, MAX_USER_ID_BYTE_LENGTH, task.GetData(), MAX_USER_ID_BYTE_LENGTH);
 		memcpy_s(mUserPw, MAX_USER_PW_BYTE_LENGTH, &task.GetData()[MAX_USER_ID_BYTE_LENGTH], MAX_USER_PW_BYTE_LENGTH);
 	}
-	LoginReqRedisPacket(UINT32 clientId, REDIS_TASK_ID redisTaskId, const char* data, size_t data_size)
+	LoginReqRedisPacket(UINT32 clientId, RedisTaskID redisTaskId, const char* data, size_t data_size)
 	{
 		mClientId = clientId;
 		mRedisTaskId = redisTaskId;
@@ -48,7 +48,7 @@ public:
 private:
 
 	UINT32 mClientId = 0;
-	REDIS_TASK_ID mRedisTaskId = REDIS_TASK_ID::INVALID;
+	RedisTaskID mRedisTaskId = RedisTaskID::INVALID;
 
 	//TODO 최흥배
 	// 아래 변수를 그대로 문자열 비교에 사용한다면 널문자가 들어갈 공간도 필요합니다.
@@ -60,7 +60,7 @@ private:
 class LoginResRedisPacket
 {
 public:
-	LoginResRedisPacket(UINT32 clientId, REDIS_TASK_ID redisTaskId, const char* data)
+	LoginResRedisPacket(UINT32 clientId, RedisTaskID redisTaskId, const char* data)
 	{
 		mClientId = clientId;
 		mRedisTaskId = redisTaskId;
@@ -96,7 +96,7 @@ public:
 
 private:
 	UINT32 mClientId = 0;
-	REDIS_TASK_ID mRedisTaskId = REDIS_TASK_ID::INVALID;
+	RedisTaskID mRedisTaskId = RedisTaskID::INVALID;
 	char mUserId[MAX_USER_ID_BYTE_LENGTH] = { 0, };
 	ERROR_CODE mResult = ERROR_CODE::NONE;
 };

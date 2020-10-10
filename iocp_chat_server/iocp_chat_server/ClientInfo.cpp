@@ -55,7 +55,7 @@ void ClientInfo::SetSending(bool bSending)
 
 bool ClientInfo::IsConnecting()
 {
-	std::lock_guard<std::mutex> guard(mIsConnectingLick);
+	std::lock_guard<std::mutex> guard(mIsConnectingLock);
 	return mIsConnecting;
 }
 
@@ -66,27 +66,31 @@ void ClientInfo::CloseSocket()
 	SetClientSocket(INVALID_SOCKET);
 }
 
-void ClientInfo::AsyncAccept(SOCKET listenSocket)
+void ClientInfo::PostAccept(SOCKET listenSocket)
 {
 	if (IsConnecting())
+	{
 		return;
+	}
 	
 	UINT64 curTimeSec = GetCurTimeSec();
 	if (curTimeSec < GetLatestClosedTimeSec())
+	{
 		return;
+	}
 
 	UINT64 diff = curTimeSec - GetLatestClosedTimeSec();
 	if (diff <= RE_USE_SESSION_WAIT_TIMESEC)
+	{
 		return;
-
+	}
+		
 	PostAccept(listenSocket, curTimeSec);
 }
 
 void ClientInfo::SetIsConnecting(bool isConnecting)
 {
-	//TODO 최흥배 
-	// mIsConnectingLick 오타인 것 같네요
-	std::lock_guard<std::mutex> guard(mIsConnectingLick);
+	std::lock_guard<std::mutex> guard(mIsConnectingLock);
 	mIsConnecting = isConnecting;
 }
 

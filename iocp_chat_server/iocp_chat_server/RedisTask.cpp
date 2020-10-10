@@ -6,7 +6,7 @@ void RedisTask::SetClientId(UINT32 clientId)
 	mClientId = clientId;
 }
 
-void RedisTask::SetTaskId(REDIS_TASK_ID id)
+void RedisTask::SetTaskId(RedisTaskID id)
 {
 	mTaskID = id;
 };

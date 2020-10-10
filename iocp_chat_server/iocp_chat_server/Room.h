@@ -22,7 +22,7 @@ public:
 	//TODO 최흥배
 	// 이 함수를 호출하는 곳에서 매번 std::function<void(stPacket)>을 만들어서 넘기고 있습니다.
 	// 호출하는 곳에서 한번만 만들어서 참조로 전달하거나 혹은 여기에 std::function<void(stPacket)>을 static으로 만들어서 매번 객체를 생성하지 않도록 합니다.
-	void Notify(UINT32 clientFrom, UINT16 packetId, const char* body, size_t bodySize, std::function<void(stPacket)> packetSender);
+	void Notify(UINT32 clientFrom, UINT16 packetId, const char* body, size_t bodySize, const std::function<void(stPacket)>& packetSender);
 
 private:
 	UINT32						mRoomNumber = 0;

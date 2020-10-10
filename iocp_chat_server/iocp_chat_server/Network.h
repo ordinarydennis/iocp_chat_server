@@ -14,7 +14,7 @@ class Network
 public:
     Network() = default;
    ~Network() { WSACleanup(); };
-    Error           Init(UINT16 SERVER_PORT);
+    Error           Init(UINT16 serverPort);
     void            Run();
     void            Destroy();
     void            SendData(stPacket packet);
@@ -29,7 +29,7 @@ private:
     Error           CreateListenSocket();
     Error           CreateIOCP();
     void            CreateClient(const UINT32 maxClientCount);
-    Error           BindandListen(UINT16 SERVER_PORT);
+    Error           BindandListen(UINT16 serverPort);
     Error           RegisterListenSocketToIOCP();
 
     void            SetWokerThread();
@@ -38,13 +38,13 @@ private:
     void            SendPacketThread();
     void            ProcAcceptOperation(stOverlappedEx* pOverlappedEx);
     void            ProcRecvOperation(ClientInfo* pClientInfo, DWORD dwIoSize);
-    void            ProcSendOperation(ClientInfo* pClientInfo, DWORD dwIoSize);
-    bool            SendMsg(ClientInfo* pClientInfo, char* pMsg, UINT32 len);
+    //void            ProcSendOperation(ClientInfo* pClientInfo, DWORD dwIoSize);
+    bool            PostSendMsg(ClientInfo* pClientInfo, char* pMsg, UINT32 len);
     void            SetAccepterThread();
     void            AccepterThread();
     void            CloseSocket(ClientInfo* pClientInfo, bool bIsForce = false);
     bool            BindIOCompletionPort(ClientInfo* pClientInfo);
-    bool            BindRecv(ClientInfo* pClientInfo);
+    bool            PostRecv(ClientInfo* pClientInfo);
     void            DestroyThread();
     void            AddToClientPoolRecvPacket(ClientInfo* c, size_t size);
 

@@ -70,7 +70,9 @@ public:
 			UINT64 userUniqueId = user->GetClientId();
 			//자기 자신은 리스트에서 제외한다.
 			if (userUniqueId == enteredClientId)
+			{
 				continue;
+			}
 
 			const size_t userUniqueIdSize = sizeof(userUniqueId);
 			const size_t bodySize = userUniqueIdSize + MAX_USER_ID_BYTE_LENGTH;

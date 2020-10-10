@@ -21,7 +21,7 @@ public:
 	char*			GetSendBuf() { return mSendBuf; };
 	bool			IsConnecting();
 	void			CloseSocket();
-	void			AsyncAccept(SOCKET listenSocket);
+	void			PostAccept(SOCKET listenSocket);
 
 	stOverlappedEx*	GetRecvOverlappedEx() { return &mRecvOverlappedEx; };
 	stOverlappedEx*	GetSendOverlappedEx() { return &mSendOverlappedEx; };
@@ -64,7 +64,7 @@ private:
 	std::mutex                  mSendingLock;
 
 	bool						mIsConnecting = false;
-	std::mutex                  mIsConnectingLick;
+	std::mutex                  mIsConnectingLock;
 
 	UINT64						mLatestClosedTimeSec = 0;;
 };

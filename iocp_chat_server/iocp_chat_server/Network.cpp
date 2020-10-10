@@ -6,32 +6,42 @@
 
 using namespace std::chrono;
 
-Error Network::Init(UINT16 SERVER_PORT)
+Error Network::Init(UINT16 serverPort)
 {
 	SetMaxThreadCount();
 
 	Error error = Error::NONE;
 	error = WinsockStartup();
 	if (Error::NONE != error)
+	{
 		return error;
+	}
 	
 	error = CreateListenSocket();
 	if (Error::NONE != error)
+	{
 		return error;
-
+	}
+		
 	error = CreateIOCP();
 	if (Error::NONE != error)
+	{
 		return error;
+	}
 
 	CreateClient(MAX_CLIENT);
 	
-	error = BindandListen(SERVER_PORT);
+	error = BindandListen(serverPort);
 	if (Error::NONE != error)
+	{
 		return error;
+	}
 
 	error = RegisterListenSocketToIOCP();
 	if (Error::NONE != error)
+	{
 		return error;
+	}
 
 	return Error::NONE;
 }
@@ -87,11 +97,11 @@ void Network::CreateClient(const UINT32 maxClientCount)
 
 //TODO 최흥배
 // 변수 이름 일관성을 지켜주세요~
-Error Network::BindandListen(UINT16 SERVER_PORT)
+Error Network::BindandListen(UINT16 serverPort)
 {
 	SOCKADDR_IN stServerAddr;
 	stServerAddr.sin_family = AF_INET;
-	stServerAddr.sin_port = htons(SERVER_PORT);		
+	stServerAddr.sin_port = htons(serverPort);		
 	stServerAddr.sin_addr.s_addr = htonl(INADDR_ANY);
 
 	int nRet = bind(mListenSocket, (SOCKADDR*)&stServerAddr, sizeof(SOCKADDR_IN));
@@ -159,7 +169,9 @@ void Network::WokerThread()
 			INFINITE);					// 대기할 시간
  
 		if (NULL == lpOverlapped)
+		{
 			continue;
+		}	
 
 		//사용자 쓰레드 종료 메세지 처리..
 		if (TRUE == bSuccess && 0 == dwIoSize && NULL == lpOverlapped)
@@ -188,7 +200,16 @@ void Network::WokerThread()
 		}
 		else if (IOOperation::SEND == pOverlappedEx->m_eOperation)
 		{
-			ProcSendOperation(pClientInfo, dwIoSize);
+			if (dwIoSize == pOverlappedEx->m_wsaBuf.len)
+			{
+				pClientInfo->PopSendPacketPool();
+			}
+			else
+			{
+				printf("[ERROR] 유저 %d 송신 실패.. 재전송 시도..\n", pClientInfo->GetId());
+			}
+
+			pClientInfo->SetSending(false);
 		}
 		else
 		{
@@ -216,7 +237,7 @@ void Network::SendPacketThread()
 			}
 
 			auto sendPacketOpt = clientInfo->GetSendPacket();
-			if (false == sendPacketOpt.has_value())
+			if (std::nullopt == sendPacketOpt)
 			{
 				//보낼 패킷이 없는 유저
 				continue;
@@ -243,8 +264,7 @@ void Network::ProcAcceptOperation(stOverlappedEx* pOverlappedEx)
 		return;
 	}
 
-	//Recv Overlapped I/O작업을 요청해 놓는다.
-	bRet = BindRecv(pClientInfo);
+	bRet = PostRecv(pClientInfo);
 	if (false == bRet)
 	{
 		return;
@@ -256,28 +276,27 @@ void Network::ProcAcceptOperation(stOverlappedEx* pOverlappedEx)
 void Network::ProcRecvOperation(ClientInfo* pClientInfo, DWORD dwIoSize)
 {
 	AddToClientPoolRecvPacket(pClientInfo, dwIoSize);
-	BindRecv(pClientInfo);
+	PostRecv(pClientInfo);
 }
 
-void Network::ProcSendOperation(ClientInfo* pClientInfo, DWORD dwIoSize)
-{
-	//TODO 최흥배
-	// 데이터를 다 보내었는지 조사하는데 send 패킷 풀에서 데이터를 뺄 필요가 없습니다.
-	// 이 함수를 호출하는 stOverlappedEx에 보면 이미 보낼 데이터를 가리키는 포인터와 보내는 양이 기록 되어 있습니다.	
-	stPacket lastSendingPacket = pClientInfo->GetSendPacket().value();
-	if (dwIoSize == lastSendingPacket.mHeader.mSize)
-	{
-		//전송이 완료 됐을때만 pop
-		pClientInfo->PopSendPacketPool();
-
-	}
-	else
-	{
-		printf("[ERROR] 유저 %d 송신 실패.. 재전송 시도..\n", pClientInfo->GetId());
-	}
-
-	pClientInfo->SetSending(false);
-}
+//void Network::ProcSendOperation(ClientInfo* pClientInfo, DWORD dwIoSize)
+//{
+//	//TODO 최흥배
+//	// 데이터를 다 보내었는지 조사하는데 send 패킷 풀에서 데이터를 뺄 필요가 없습니다.
+//	// 이 함수를 호출하는 stOverlappedEx에 보면 이미 보낼 데이터를 가리키는 포인터와 보내는 양이 기록 되어 있습니다.	
+//	stPacket lastSendingPacket = pClientInfo->GetSendPacket().value();
+//	if (dwIoSize == lastSendingPacket.mHeader.mSize)
+//	{
+//		//전송이 완료 됐을때만 pop
+//		pClientInfo->PopSendPacketPool();
+//	}
+//	else
+//	{
+//		printf("[ERROR] 유저 %d 송신 실패.. 재전송 시도..\n", pClientInfo->GetId());
+//	}
+//
+//	pClientInfo->SetSending(false);
+//}
 
 //소켓의 연결을 종료 시킨다.
 void Network::CloseSocket(ClientInfo* pClientInfo, bool bIsForce)
@@ -290,11 +309,6 @@ void Network::CloseSocket(ClientInfo* pClientInfo, bool bIsForce)
 		stLinger.l_onoff = 1;
 	}
 
-	//TODO 최흥배
-	// SO_LINGER로 바로 끊어버리므로 shutdown 안해도 괜찮습니다.
-	//socketClose소켓의 데이터 송수신을 모두 중단 시킨다.
-	//shutdown(pClientInfo->GetClientSocket(), SD_BOTH);
-
 	//소켓 옵션을 설정한다.
 	setsockopt(pClientInfo->GetClientSocket(), SOL_SOCKET, SO_LINGER, (char*)&stLinger, sizeof(stLinger));
 
@@ -305,7 +319,7 @@ void Network::CloseSocket(ClientInfo* pClientInfo, bool bIsForce)
 //TODO 최흥배
 // 비동기 요청을 호출하는 함수 이름에는 대부분 Post를 붙였으니 여기도 함수 이름에 Post를 붙이는 것이 일관성이 있지 않을까요?
 //WSASend Overlapped I/O작업을 시킨다.
-bool Network::SendMsg(ClientInfo* pClientInfo, char* pMsg, UINT32 len)
+bool Network::PostSendMsg(ClientInfo* pClientInfo, char* pMsg, UINT32 len)
 {
 	DWORD dwRecvNumBytes = 0;
 
@@ -318,6 +332,7 @@ bool Network::SendMsg(ClientInfo* pClientInfo, char* pMsg, UINT32 len)
 	pClientInfo->GetSendOverlappedEx()->m_wsaBuf.buf = pClientInfo->GetSendBuf();
 	pClientInfo->GetSendOverlappedEx()->m_eOperation = IOOperation::SEND;
 
+	//TODO 이부분 다시 조사하기
 	int nRet = WSASend(pClientInfo->GetClientSocket(),
 		&(pClientInfo->GetSendOverlappedEx()->m_wsaBuf),
 		1,
@@ -338,7 +353,7 @@ bool Network::SendMsg(ClientInfo* pClientInfo, char* pMsg, UINT32 len)
 //TODO 최흥배
 // 비동기 요청에는 보통 Post나 혹은 Begin 또는 Async를 붙입니다. Bind는 그 뜻이 너무 다른 것 같습니다.
 //WSARecv Overlapped I/O 작업을 시킨다.
-bool Network::BindRecv(ClientInfo* pClientInfo)
+bool Network::PostRecv(ClientInfo* pClientInfo)
 {
 	DWORD dwFlag = 0;
 	DWORD dwRecvNumBytes = 0;
@@ -382,7 +397,7 @@ void Network::AccepterThread()
 	{
 		for (auto& clientInfo : mClientInfos)
 		{
-			clientInfo.AsyncAccept(mListenSocket);
+			clientInfo.PostAccept(mListenSocket);
 		}
 
 		Sleep(1);
@@ -461,7 +476,7 @@ void Network::SendData(stPacket packet)
 	memcpy_s(&buff[PACKET_HEADER_SIZE], bodySize, packet.mBody, bodySize);
 
 	ClientInfo* c = GetClientInfo(packet.mClientTo);
-	SendMsg(c, buff, header.mSize);
+	PostSendMsg(c, buff, header.mSize);
 }
 
 //생성되어있는 쓰레드를 파괴한다.

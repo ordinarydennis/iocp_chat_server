@@ -100,7 +100,7 @@ struct stPacket
 		memcpy_s(mBody, size, Body, size);
 	}
 
-	size_t GetBodySize()
+	size_t GetBodySize() const
 	{
 		return mHeader.mSize - PACKET_HEADER_SIZE;
 	}

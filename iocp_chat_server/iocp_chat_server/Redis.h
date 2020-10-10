@@ -14,6 +14,8 @@ namespace RedisCpp
 	class CRedisConn;
 }
 
+class RedisProcessor;
+
 class Redis
 {
 public:
@@ -43,6 +45,8 @@ private:
 
 	std::mutex						mRequestTaskLock;
 	std::mutex						mResponseTaskLock;
+
+	RedisProcessor*					mRedisProcessor = nullptr;
 
 };
 
