@@ -24,7 +24,8 @@ public:
 
     void            Run();
 
-    void            ProcessPacket(std::pair<ClientInfo*, size_t> recvedPacketInfo);
+    //void            ProcessPacket(std::pair<ClientInfo*, size_t> recvedPacketInfo);
+    void            ProcessPacket(const stOverlappedEx& recvOverlappedEx);
 
     void            ProcessRedisPacket(const RedisTask& task);
     

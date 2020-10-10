@@ -2,10 +2,6 @@
 #include "../thirdparty/flags.h"
 #include <iostream>
 
-//TODO 최흥배 
-// 변경될 수 있는 설정 값은 서버 실행 시 외부에서 받도록 합니다
-// https://jacking75.github.io/C++_argument_parser_flags/  이 라이브러리를 사용해보죠
-
 //TODO 최흥배
 // const를 적극 사용해봅니다
 

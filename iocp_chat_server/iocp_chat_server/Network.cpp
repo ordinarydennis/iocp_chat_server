@@ -195,8 +195,12 @@ void Network::WokerThread()
 				CloseSocket(pClientInfo);
 				continue;
 			}
+			//ProcRecvOperation(pClientInfo, dwIoSize);
 
-			ProcRecvOperation(pClientInfo, dwIoSize);
+			stOverlappedEx recvOverlappedEx = *pOverlappedEx;
+			recvOverlappedEx.m_wsaBuf.len = dwIoSize;
+			ProcRecvOperation(recvOverlappedEx);
+			PostRecv(pClientInfo);
 		}
 		else if (IOOperation::SEND == pOverlappedEx->m_eOperation)
 		{
@@ -227,8 +231,14 @@ void Network::SendPacketThread()
 {
 	while (mSendPacketRun)
 	{
+		bool isIdle = true;
 		for (UINT32 index = 0; index < mClientInfos.size(); index++)
 		{
+			if (0 == index)
+			{
+				isIdle = true;
+			}
+
 			ClientInfo* clientInfo = &mClientInfos[index];
 			if (clientInfo->IsSending())
 			{ 
@@ -240,17 +250,23 @@ void Network::SendPacketThread()
 			if (std::nullopt == sendPacketOpt)
 			{
 				//보낼 패킷이 없는 유저
+				//모든 유저 순회 했을 때 보낼 패킷이 있는 유저가 없다면 Sleep(1)
+				if (index == mClientInfos.size() - 1 && true == isIdle)
+				{
+					Sleep(1);
+				}
 				continue;
 			}
 
 			stPacket sendingPacket = sendPacketOpt.value();
 			clientInfo->SetSending(true);
 			SendData(sendingPacket);
+			isIdle = false;
 		}
 	}
 }
 
-void Network::ProcAcceptOperation(stOverlappedEx* pOverlappedEx)
+void Network::ProcAcceptOperation(const stOverlappedEx* pOverlappedEx)
 {
 	ClientInfo* pClientInfo = GetClientInfo(pOverlappedEx->m_clientId);
 	if (nullptr == pClientInfo)
@@ -273,12 +289,18 @@ void Network::ProcAcceptOperation(stOverlappedEx* pOverlappedEx)
 	++mClientCnt;
 }
 
-void Network::ProcRecvOperation(ClientInfo* pClientInfo, DWORD dwIoSize)
+//void Network::ProcRecvOperation(ClientInfo* pClientInfo, DWORD dwIoSize)
+//{
+//	AddToClientPoolRecvPacket(pClientInfo, dwIoSize);
+//	PostRecv(pClientInfo);
+//}
+
+void Network::ProcRecvOperation(const stOverlappedEx& recvOverlappedEx)
 {
-	AddToClientPoolRecvPacket(pClientInfo, dwIoSize);
-	PostRecv(pClientInfo);
+	AddToClientPoolRecvPacket(recvOverlappedEx);
 }
 
+//TODO 여기 다시 조사 해보기 stOverlappedEx
 //void Network::ProcSendOperation(ClientInfo* pClientInfo, DWORD dwIoSize)
 //{
 //	//TODO 최흥배
@@ -319,7 +341,7 @@ void Network::CloseSocket(ClientInfo* pClientInfo, bool bIsForce)
 //TODO 최흥배
 // 비동기 요청을 호출하는 함수 이름에는 대부분 Post를 붙였으니 여기도 함수 이름에 Post를 붙이는 것이 일관성이 있지 않을까요?
 //WSASend Overlapped I/O작업을 시킨다.
-bool Network::PostSendMsg(ClientInfo* pClientInfo, char* pMsg, UINT32 len)
+bool Network::PostSendMsg(ClientInfo* pClientInfo, const char* pMsg, UINT32 len)
 {
 	DWORD dwRecvNumBytes = 0;
 
@@ -331,6 +353,7 @@ bool Network::PostSendMsg(ClientInfo* pClientInfo, char* pMsg, UINT32 len)
 	pClientInfo->GetSendOverlappedEx()->m_wsaBuf.len = len;
 	pClientInfo->GetSendOverlappedEx()->m_wsaBuf.buf = pClientInfo->GetSendBuf();
 	pClientInfo->GetSendOverlappedEx()->m_eOperation = IOOperation::SEND;
+	pClientInfo->GetSendOverlappedEx()->m_clientId = pClientInfo->GetId();
 
 	//TODO 이부분 다시 조사하기
 	int nRet = WSASend(pClientInfo->GetClientSocket(),
@@ -366,6 +389,7 @@ bool Network::PostRecv(ClientInfo* pClientInfo)
 	pClientInfo->GetRecvOverlappedEx()->m_wsaBuf.len = MAX_SOCKBUF;
 	pClientInfo->GetRecvOverlappedEx()->m_wsaBuf.buf = pClientInfo->GetRecvBuf();
 	pClientInfo->GetRecvOverlappedEx()->m_eOperation = IOOperation::RECV;
+	pClientInfo->GetRecvOverlappedEx()->m_clientId = pClientInfo->GetId();
 
 	int nRet = WSARecv(pClientInfo->GetClientSocket(),
 		&(pClientInfo->GetRecvOverlappedEx()->m_wsaBuf),
@@ -427,7 +451,7 @@ bool Network::BindIOCompletionPort(ClientInfo* pClientInfo)
 	return true;
 }
 
-std::optional<std::pair<ClientInfo*, size_t>> Network::GetClientRecvedPacket()
+std::optional<stOverlappedEx> Network::GetClientRecvedPacket()
 {
 	std::lock_guard<std::mutex> guard(mRecvPacketLock);
 	if (mClientPoolRecvedPacket.empty())
@@ -435,15 +459,22 @@ std::optional<std::pair<ClientInfo*, size_t>> Network::GetClientRecvedPacket()
 		return std::nullopt;
 	}
 	
-	std::pair<ClientInfo*, size_t> front = mClientPoolRecvedPacket.front();
+	//std::pair<ClientInfo*, size_t> front = mClientPoolRecvedPacket.front();
+	stOverlappedEx front = mClientPoolRecvedPacket.front();
 	mClientPoolRecvedPacket.pop();
 	return front;
 }
 
-void Network::AddToClientPoolRecvPacket(ClientInfo* c, size_t size)
+//void Network::AddToClientPoolRecvPacket(ClientInfo* c, size_t size)
+//{
+//	std::lock_guard<std::mutex> guard(mRecvPacketLock);
+//	mClientPoolRecvedPacket.push(std::make_pair(c, size));
+//}
+
+void Network::AddToClientPoolRecvPacket(const stOverlappedEx& recvOverlappedEx)
 {
 	std::lock_guard<std::mutex> guard(mRecvPacketLock);
-	mClientPoolRecvedPacket.push(std::make_pair(c, size));
+	mClientPoolRecvedPacket.push(recvOverlappedEx);
 }
 
 void Network::SendPacket(const stPacket& packet)

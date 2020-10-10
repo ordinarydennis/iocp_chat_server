@@ -117,11 +117,7 @@ void ClientInfo::AddSendPacket(const stPacket& packet)
 	std::lock_guard<std::mutex> guard(mSendPacketPoolLock);
 	mSendPacketPool.push_back(packet);
 }
-void ClientInfo::AddSendPacketAtFront(const stPacket& packet)
-{
-	std::lock_guard<std::mutex> guard(mSendPacketPoolLock);
-	mSendPacketPool.push_front(packet);
-}
+
 bool ClientInfo::PostAccept(SOCKET listenSocket, const UINT64 curTimeSec_)
 {
 	mLatestClosedTimeSec = UINT64_MAX;

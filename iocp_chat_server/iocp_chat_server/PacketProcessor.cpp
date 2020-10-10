@@ -98,20 +98,23 @@ void PacketProcessor::ReceivePacketThread()
 	}
 }
 
-void PacketProcessor::ProcessPacket(std::pair<ClientInfo*, size_t> recvedPacketInfo)
+void PacketProcessor::ProcessPacket(const stOverlappedEx& recvOverlappedEx)
 {
-	ClientInfo* pClientInfo = recvedPacketInfo.first;
-	size_t dwIoSize = recvedPacketInfo.second;
+	//ClientInfo* pClientInfo = recvedPacketInfo.first;
+	//size_t dwIoSize = recvedPacketInfo.second;
+	const char* recvBuf = recvOverlappedEx.m_wsaBuf.buf;
+	const size_t recvBufSize = recvOverlappedEx.m_wsaBuf.len;
+	UINT32 clientId = recvOverlappedEx.m_clientId;
 
 	stPacketHeader header;
-	memcpy_s(&header.mSize, sizeof(UINT16), pClientInfo->GetRecvBuf(), sizeof(UINT16));
-	memcpy_s(&header.mPacket_id, sizeof(UINT16), &pClientInfo->GetRecvBuf()[2], sizeof(UINT16));
+	memcpy_s(&header.mSize, sizeof(UINT16), recvBuf, sizeof(UINT16));
+	memcpy_s(&header.mPacket_id, sizeof(UINT16), &recvBuf[2], sizeof(UINT16));
 
 	char body[MAX_SOCKBUF] = { 0, };
-	UINT32 bodySize = (UINT32)dwIoSize - PACKET_HEADER_SIZE;
-	memcpy_s(body, bodySize, &pClientInfo->GetRecvBuf()[PACKET_HEADER_SIZE], bodySize);
+	UINT32 bodySize = (UINT32)recvBufSize - PACKET_HEADER_SIZE;
+	memcpy_s(body, bodySize, &recvBuf[PACKET_HEADER_SIZE], bodySize);
 
-	stPacket packet(pClientInfo->GetId(), 0, header, body, bodySize);
+	stPacket packet(clientId, 0, header, body, bodySize);
 
 	PacketID packetId = static_cast<PacketID>(packet.mHeader.mPacket_id);
 	auto iter = mRecvPacketProcDict.find(packetId);
