@@ -17,8 +17,8 @@ public:
 	const char* GetData() const { return mData; };
 	size_t GetDataSize() const { return mDataSize; };
 
-	void SetClientId(UINT32 clientId);
-	void SetTaskId(RedisTaskID id);
+	void SetClientId(UINT32 clientId) { mClientId = clientId; };
+	void SetTaskId(RedisTaskID id) { mTaskID = id; };
 	void SetData(const char* data, size_t size);
 
 private:

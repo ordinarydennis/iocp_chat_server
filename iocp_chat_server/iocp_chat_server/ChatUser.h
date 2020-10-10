@@ -14,7 +14,7 @@ public:
 	UINT32				GetClientId()	const { return mClientId; }
 	UINT32				GetRoomNumber() const { return mRoomNumber; };
 
-	void				SetRoomNumber(UINT32 roomNumber);
+	void				SetRoomNumber(UINT32 roomNumber) { mRoomNumber = roomNumber; };
 		
 private:
 	std::string			mUserId;

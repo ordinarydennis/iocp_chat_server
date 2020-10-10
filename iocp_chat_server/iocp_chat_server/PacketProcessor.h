@@ -2,7 +2,6 @@
 
 #include "Define.h"
 #include "RedisPacket.h"
-
 #include <unordered_map>
 #include <functional>
 #include <thread>
@@ -21,7 +20,7 @@ public:
 
 	~PacketProcessor();
 
-    Error            Init();
+	Error			Init(UINT16 port);
 
     void            Run();
 

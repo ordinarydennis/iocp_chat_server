@@ -15,9 +15,9 @@ class Room
 public:
 	UINT32 GetRoomNumber() { return mRoomNumber; };
 	std::list<ChatUser*>* GetUserList() { return &mUserList; };
-	void SetRoomNumber(UINT32 roomNumber);
-	void AddUser(ChatUser* chatUser);
-	void RemoveUser(ChatUser* chatUser);
+	void SetRoomNumber(UINT32 roomNumber) { mRoomNumber = roomNumber; };
+	void AddUser(ChatUser* chatUser) { mUserList.push_back(chatUser); };
+	void RemoveUser(ChatUser* chatUser) { mUserList.remove(chatUser); };
 
 	//TODO 최흥배
 	// 이 함수를 호출하는 곳에서 매번 std::function<void(stPacket)>을 만들어서 넘기고 있습니다.

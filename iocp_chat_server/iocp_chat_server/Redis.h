@@ -8,6 +8,7 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <unordered_map>
 
 namespace RedisCpp
 {
@@ -20,21 +21,30 @@ class Redis
 {
 public:
 	Redis();
+
 	~Redis();
 
 	Error Connect(const char* ip, unsigned port);
+
 	void Run();
+
 	void Destroy();
 
 	void RequestTask(const RedisTask& task);
-	std::optional<RedisTask> GetResponseTask();
-	std::optional<RedisTask> GetRequestTask();
 
-	void ProcLogin(const RedisTask& task);
+	std::optional<RedisTask> GetResponseTask();
+
+	std::optional<RedisTask> GetRequestTask();
 
 private:
 	void ResponseTask(const RedisTask& task);
+
 	void RedisThread();
+
+	void ProcessRedisPacket(const RedisTask& task);
+
+	void ProcLogin(const RedisTask& task);
+
 
 private:
 	RedisCpp::CRedisConn*			mConn = nullptr;
@@ -46,7 +56,8 @@ private:
 	std::mutex						mRequestTaskLock;
 	std::mutex						mResponseTaskLock;
 
-	RedisProcessor*					mRedisProcessor = nullptr;
+	using receiver = void(Redis::*)(const RedisTask& task);
+	std::unordered_map<RedisTaskID, receiver>	mRecvProcDict;
 
 };
 

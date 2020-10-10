@@ -1,5 +1,6 @@
 #include "ChatServer.h"
 #include "PacketProcessor.h"
+#include "ServerConfig.h"
 #include <string>
 #include <iostream>
 
@@ -16,11 +17,11 @@ ChatServer::~ChatServer()
 	WSACleanup();
 }
 
-Error ChatServer::Init()
+Error ChatServer::Init(UINT16 port = SERVER_PORT)
 {
 	Error error = Error::NONE;
 
-	error = mPacketProcessor->Init();
+	error = mPacketProcessor->Init(port);
 
 	return error;
 }

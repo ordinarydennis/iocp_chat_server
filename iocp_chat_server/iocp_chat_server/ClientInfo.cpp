@@ -20,27 +20,6 @@ ClientInfo::ClientInfo(UINT32 id)
 	ZeroMemory(&mSendOverlappedEx, sizeof(stOverlappedEx));
 }
 
-UINT64 ClientInfo::GetLatestClosedTimeSec()
-{
-	//lock
-	return mLatestClosedTimeSec;
-}
-
-void ClientInfo::SetClientSocket(SOCKET socketClient)
-{ 
-	mClientSocket = socketClient;
-}
-
-void ClientInfo::SetRecvOverlappedEx(stOverlappedEx overlappedEx)
-{
-	mRecvOverlappedEx = overlappedEx;
-}
-
-void ClientInfo::SetSendOverlappedEx(const stOverlappedEx& overlappedEx)
-{
-	mSendOverlappedEx = overlappedEx;
-}
-
 bool ClientInfo::IsSending()
 {
 	std::lock_guard<std::mutex> guard(mSendingLock);
@@ -92,11 +71,6 @@ void ClientInfo::SetIsConnecting(bool isConnecting)
 {
 	std::lock_guard<std::mutex> guard(mIsConnectingLock);
 	mIsConnecting = isConnecting;
-}
-
-void ClientInfo::SetLatestClosedTimeSec(UINT64 latestClosedTimeSec)
-{
-	mLatestClosedTimeSec = latestClosedTimeSec;
 }
 
 stPacket ClientInfo::GetRecvPacket()
@@ -180,7 +154,6 @@ bool ClientInfo::PostAccept(SOCKET listenSocket, const UINT64 curTimeSec_)
 			return false;
 		}
 	}
-
 
 	return true;
 }

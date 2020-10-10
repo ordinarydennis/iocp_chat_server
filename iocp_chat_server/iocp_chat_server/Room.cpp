@@ -3,21 +3,6 @@
 #include "Network.h"
 #include "Chatuser.h"
 
-void Room::SetRoomNumber(UINT32 roomNumber)
-{
-	mRoomNumber = roomNumber;
-}
-
-void Room::AddUser(ChatUser* chatUser)
-{
-	mUserList.push_back(chatUser);
-}
-
-void Room::RemoveUser(ChatUser* chatUser)
-{
-	mUserList.remove(chatUser);
-}
-
 void Room::Notify(UINT32 clientFrom, UINT16 packetId, const char* body, size_t bodySize, const std::function<void(stPacket)>& packetSender)
 {
 	stPacketHeader header;

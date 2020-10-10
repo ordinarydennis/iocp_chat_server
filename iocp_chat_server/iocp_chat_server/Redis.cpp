@@ -8,21 +8,17 @@
 #include "RedisProcessor.h"
 #include <sstream>
 
-
 Redis::Redis()
 	:mConn(nullptr)
 {
 	mConn = new RedisCpp::CRedisConn;
-	mRedisProcessor = new RedisProcessor;
+	mRecvProcDict[RedisTaskID::REQUEST_LOGIN] = &Redis::ProcLogin;
 }
 
 Redis::~Redis()
 {
 	delete mConn;
 	mConn = nullptr;
-
-	delete mRedisProcessor;
-	mRedisProcessor = nullptr;
 }
 
 Error Redis::Connect(const char* ip, unsigned port)
@@ -55,37 +51,23 @@ void Redis::RedisThread()
 			continue;
 		}
 		
-		RedisTask reqTask = reqTaskOpt.value();
+		ProcessRedisPacket(reqTaskOpt.value());
+	}
+}
 
-		//mRedisProcessor->ProcessRedisPacket(reqTask);
-
-		//TODO 최흥배
-		//장래에 복수의 case에서도 처리될 수 있도록 구조화 하기 바랍니다. 패킷 처리쪽처럼
-		if (RedisTaskID::REQUEST_LOGIN == reqTask.GetTaskId())
-		{
-			ERROR_CODE error_code = ERROR_CODE::LOGIN_USER_INVALID_PW;
-
-			LoginReqRedisPacket reqPacket(reqTask);
-			const size_t bufSize = MAX_USER_ID_BYTE_LENGTH + sizeof(ERROR_CODE);
-			char buf[bufSize] = { 0, };
-			std::string pw;
-			if (mConn->get(reqPacket.GetUserId(), pw))
-			{
-				if (pw.compare(reqPacket.GetUserPw()) == 0)
-				{
-					memcpy_s(buf, strnlen_s(reqPacket.GetUserId(), MAX_USER_PW_BYTE_LENGTH), reqPacket.GetUserId(), strnlen_s(reqPacket.GetUserId(), MAX_USER_PW_BYTE_LENGTH));
-					error_code = ERROR_CODE::NONE;
-				}
-			}
-			memcpy_s(&buf[MAX_USER_ID_BYTE_LENGTH], sizeof(error_code), &error_code, sizeof(error_code));
-			LoginResRedisPacket resPacket(reqPacket.GetClientId(), RedisTaskID::RESPONSE_LOGIN, buf);
-			ResponseTask(resPacket.GetTask());
-		}
+void Redis::ProcessRedisPacket(const RedisTask& task)
+{
+	auto iter = mRecvProcDict.find(task.GetTaskId());
+	if (iter != mRecvProcDict.end())
+	{
+		(this->*(iter->second))(task);
 	}
 }
 
 void Redis::ProcLogin(const RedisTask& task)
 {
+	//TODO 최흥배
+	//장래에 복수의 case에서도 처리될 수 있도록 구조화 하기 바랍니다. 패킷 처리쪽처럼
 	ERROR_CODE error_code = ERROR_CODE::LOGIN_USER_INVALID_PW;
 
 	LoginReqRedisPacket reqPacket(task);
@@ -96,20 +78,14 @@ void Redis::ProcLogin(const RedisTask& task)
 	{
 		if (pw.compare(reqPacket.GetUserPw()) == 0)
 		{
+			memcpy_s(buf, strnlen_s(reqPacket.GetUserId(), MAX_USER_PW_BYTE_LENGTH), reqPacket.GetUserId(), strnlen_s(reqPacket.GetUserId(), MAX_USER_PW_BYTE_LENGTH));
 			error_code = ERROR_CODE::NONE;
 		}
-
-		if (ERROR_CODE::NONE == error_code)
-		{
-			//TODO 최흥배
-			// 안전하지 않은 strlen는 사용하지 말고 안전한 함수를 사용합니다.
-			memcpy_s(buf, strnlen_s(reqPacket.GetUserId(), MAX_USER_ID_BYTE_LENGTH), reqPacket.GetUserId(), strnlen_s(reqPacket.GetUserId(), MAX_USER_ID_BYTE_LENGTH));
-		}
-
 	}
 	memcpy_s(&buf[MAX_USER_ID_BYTE_LENGTH], sizeof(error_code), &error_code, sizeof(error_code));
 	LoginResRedisPacket resPacket(reqPacket.GetClientId(), RedisTaskID::RESPONSE_LOGIN, buf);
 	ResponseTask(resPacket.GetTask());
+
 }
 
 void Redis::RequestTask(const RedisTask& task)

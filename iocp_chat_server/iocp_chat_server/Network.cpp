@@ -6,7 +6,7 @@
 
 using namespace std::chrono;
 
-Error Network::Init(UINT16 serverPort)
+Error Network::Init(UINT16 port)
 {
 	SetMaxThreadCount();
 
@@ -31,7 +31,7 @@ Error Network::Init(UINT16 serverPort)
 
 	CreateClient(MAX_CLIENT);
 	
-	error = BindandListen(serverPort);
+	error = BindandListen(port);
 	if (Error::NONE != error)
 	{
 		return error;
@@ -97,11 +97,11 @@ void Network::CreateClient(const UINT32 maxClientCount)
 
 //TODO 최흥배
 // 변수 이름 일관성을 지켜주세요~
-Error Network::BindandListen(UINT16 serverPort)
+Error Network::BindandListen(UINT16 port)
 {
 	SOCKADDR_IN stServerAddr;
 	stServerAddr.sin_family = AF_INET;
-	stServerAddr.sin_port = htons(serverPort);		
+	stServerAddr.sin_port = htons(port);		
 	stServerAddr.sin_addr.s_addr = htonl(INADDR_ANY);
 
 	int nRet = bind(mListenSocket, (SOCKADDR*)&stServerAddr, sizeof(SOCKADDR_IN));

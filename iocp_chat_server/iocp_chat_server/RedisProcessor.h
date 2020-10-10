@@ -11,13 +11,5 @@ public:
 
 	~RedisProcessor();
 
-	void ProcessRedisPacket(const RedisTask& task);
-
-private:
-	void ProcLogin(const RedisTask& task);
-
-private:
-	using receiver = void(RedisProcessor::*)(const RedisTask& p);
-	std::unordered_map<RedisTaskID, receiver>  mRecvProcDict;
 };
 

@@ -29,7 +29,7 @@ private:
     Error           CreateListenSocket();
     Error           CreateIOCP();
     void            CreateClient(const UINT32 maxClientCount);
-    Error           BindandListen(UINT16 serverPort);
+    Error           BindandListen(UINT16 port);
     Error           RegisterListenSocketToIOCP();
 
     void            SetWokerThread();

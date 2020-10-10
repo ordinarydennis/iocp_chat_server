@@ -47,13 +47,13 @@
     <ClCompile Include="ChatUserManager.cpp">
       <Filter>Source Files\Private</Filter>
     </ClCompile>
-    <ClCompile Include="Define.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="PacketProcessor.cpp">
       <Filter>Source Files\Private</Filter>
     </ClCompile>
     <ClCompile Include="RedisProcessor.cpp">
+      <Filter>Source Files\Private</Filter>
+    </ClCompile>
+    <ClCompile Include="Define.cpp">
       <Filter>Source Files\Private</Filter>
     </ClCompile>
   </ItemGroup>

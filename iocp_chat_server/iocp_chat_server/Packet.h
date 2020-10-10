@@ -153,7 +153,7 @@ public:
 	}
 
 private:
-	static const size_t BODY_SIZE = MAX_USER_ID_BYTE_LENGTH + MAX_CHAT_MSG_SIZE;
+	static const size_t BODY_SIZE = MAX_USER_ID_BYTE_LENGTH + MAX_CHAT_MSG_SIZE + 1;
 
 	std::string mUserid;
 	char mBody[BODY_SIZE] = { 0, };

@@ -6,7 +6,6 @@
 #include "Redis.h"
 #include "RedisConfig.h"
 #include "ChatUserManager.h"
-#include "ServerConfig.h"
 
 PacketProcessor::PacketProcessor()
 {
@@ -31,10 +30,10 @@ PacketProcessor::~PacketProcessor()
 	mNetwork = nullptr;
 }
 
-Error PacketProcessor::Init()
+Error PacketProcessor::Init(UINT16 port)
 {
 	Error error = Error::NONE;
-	error = mNetwork->Init(SERVER_PORT);
+	error = mNetwork->Init(port);
 	if (Error::NONE != error)
 	{
 		return error;

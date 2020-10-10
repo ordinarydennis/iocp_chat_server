@@ -8,9 +8,9 @@
 class RoomManager
 {
 public:
-	RoomManager();
+	RoomManager() = default;
 
-	~RoomManager();
+	~RoomManager() = default;
 	
 	bool IsExistRoom(UINT32 roomNumber);
 

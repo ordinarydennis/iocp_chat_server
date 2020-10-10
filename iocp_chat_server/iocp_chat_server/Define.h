@@ -9,7 +9,9 @@
 enum class Error
 {
     NONE,
-    WSASTARTUP = 1000,
+	IP = 1000,
+	PORT,
+    WSASTARTUP,
 	SOCKET_CREATE_LISTEN,
     SOCKET_CREATE,
 	IOCP_CREATE,

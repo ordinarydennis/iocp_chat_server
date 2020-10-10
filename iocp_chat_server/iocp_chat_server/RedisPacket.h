@@ -53,8 +53,8 @@ private:
 	//TODO 최흥배
 	// 아래 변수를 그대로 문자열 비교에 사용한다면 널문자가 들어갈 공간도 필요합니다.
 	// 최대 숫자에 1을 더 해야 합니다.
-	char mUserId[MAX_USER_ID_BYTE_LENGTH] = { 0, };
-	char mUserPw[MAX_USER_PW_BYTE_LENGTH] = { 0, };
+	char mUserId[MAX_USER_ID_BYTE_LENGTH + 1] = { 0, };
+	char mUserPw[MAX_USER_PW_BYTE_LENGTH + 1] = { 0, };
 };
 
 class LoginResRedisPacket

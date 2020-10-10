@@ -26,20 +26,20 @@ public:
 	stOverlappedEx*	GetRecvOverlappedEx() { return &mRecvOverlappedEx; };
 	stOverlappedEx*	GetSendOverlappedEx() { return &mSendOverlappedEx; };
 
-	UINT64			GetLatestClosedTimeSec();
+	UINT64			GetLatestClosedTimeSec() { return mLatestClosedTimeSec; }
 
 	void			SetId(UINT32 id) { mId = id; };
-	void			SetClientSocket(SOCKET clientSocket);
+	void			SetClientSocket(SOCKET clientSocket) { mClientSocket = clientSocket; };
 	void			AddRecvPacket(const stPacket& packet);
 	void			AddSendPacket(const stPacket& packet);
 	void			AddSendPacketAtFront(const stPacket& packet);
-	void			SetRecvOverlappedEx(stOverlappedEx overlappedEx);
-	void			SetSendOverlappedEx(const stOverlappedEx& overlappedEx);
+	void			SetRecvOverlappedEx(stOverlappedEx overlappedEx) { mRecvOverlappedEx = overlappedEx; };
+	void			SetSendOverlappedEx(const stOverlappedEx& overlappedEx) { mSendOverlappedEx = overlappedEx; };
 	void			SetSending(bool bSending);
 	void			SetIsConnecting(bool isConnecting);
 	
 private:
-	void			SetLatestClosedTimeSec(UINT64 latestClosedTimeSec);
+	void			SetLatestClosedTimeSec(UINT64 latestClosedTimeSec) { mLatestClosedTimeSec = latestClosedTimeSec; };
 	bool			PostAccept(SOCKET listenSock_, const UINT64 curTimeSec_);
 
 private:

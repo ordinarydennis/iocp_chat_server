@@ -1,5 +1,4 @@
 #pragma once
-
 #include <basetsd.h>
 
 const size_t MAX_REDIS_BUF_SIZE = 128;
