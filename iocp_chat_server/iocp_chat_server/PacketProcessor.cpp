@@ -30,7 +30,7 @@ PacketProcessor::~PacketProcessor()
 	mNetwork = nullptr;
 }
 
-Error PacketProcessor::Init(UINT16 port)
+Error PacketProcessor::Init(const UINT16 port)
 {
 	Error error = Error::NONE;
 	error = mNetwork->Init(port);
@@ -100,8 +100,6 @@ void PacketProcessor::ReceivePacketThread()
 
 void PacketProcessor::ProcessPacket(const stOverlappedEx& recvOverlappedEx)
 {
-	//ClientInfo* pClientInfo = recvedPacketInfo.first;
-	//size_t dwIoSize = recvedPacketInfo.second;
 	const char* recvBuf = recvOverlappedEx.m_wsaBuf.buf;
 	const size_t recvBufSize = recvOverlappedEx.m_wsaBuf.len;
 	UINT32 clientId = recvOverlappedEx.m_clientId;
@@ -133,7 +131,7 @@ void PacketProcessor::ProcessRedisPacket(const RedisTask& task)
 	}
 }
 
-void PacketProcessor::SendPacket(UINT32 from, UINT32 to, UINT16 packetId, char* body, size_t bodySize)
+void PacketProcessor::SendPacket(const UINT32 from, const UINT32 to, const UINT16 packetId, const char* body, const size_t bodySize)
 {
 	stPacketHeader header;
 	header.mSize = static_cast<UINT16>(bodySize + PACKET_HEADER_SIZE);
@@ -151,10 +149,6 @@ void PacketProcessor::SendPacket(UINT32 from, UINT32 to, UINT16 packetId, char* 
 	);
 }
 
-//TODO 최흥배
-// 각 패킷 처리 코드는 다른 파일로 분리하기 바랍니다.
-// 이 클래스에서 정의하면 클래스나 파일이 너무 크집니다.
-// 현재는 채팅서버만을 생각하면 그런대로 괜찮지만 이 구조를 그대로 게임서버로 가져가는 경우 코드 유지 보수에 좋지 않습니다.
 void PacketProcessor::ProcEcho(const stPacket& packet)
 {
 	stPacket resPacket = packet;
@@ -166,12 +160,18 @@ void PacketProcessor::ProcLogin(const stPacket& packet)
 {
 	LoginReqPacket loginReqPacket;
 	loginReqPacket.SetPacket(packet.mBody);
+	
 	printf("Login User Id : %s passwd : %s \n", loginReqPacket.GetUserId(), loginReqPacket.GetUserPw());
-	char buf[MAX_USER_ID_BYTE_LENGTH + MAX_USER_PW_BYTE_LENGTH] = { 0, };
-	memcpy_s(buf, strnlen_s(loginReqPacket.GetUserId(), MAX_USER_ID_BYTE_LENGTH), loginReqPacket.GetUserId(), strnlen_s(loginReqPacket.GetUserId(), MAX_USER_ID_BYTE_LENGTH));
-	memcpy_s(&buf[MAX_USER_ID_BYTE_LENGTH], strnlen_s(loginReqPacket.GetUserPw(), MAX_USER_PW_BYTE_LENGTH), loginReqPacket.GetUserPw(), strnlen_s(loginReqPacket.GetUserPw(), MAX_USER_PW_BYTE_LENGTH));
-	LoginReqRedisPacket redisReqPacket(packet.mClientFrom, RedisTaskID::REQUEST_LOGIN, buf, MAX_USER_ID_BYTE_LENGTH + MAX_USER_PW_BYTE_LENGTH);
-	mRedis->RequestTask(redisReqPacket.GetTask());
+
+	LoginReqRedisPacket redisReqPacket;
+	redisReqPacket.mClientId = packet.mClientFrom;
+	redisReqPacket.mRedisTaskId = RedisTaskID::REQUEST_LOGIN;
+	size_t userIdSize = strnlen_s(loginReqPacket.GetUserId(), MAX_USER_ID_BYTE_LENGTH);
+	memcpy_s(redisReqPacket.mUserId, userIdSize, loginReqPacket.GetUserId(), userIdSize);
+	size_t userPwSize = strnlen_s(loginReqPacket.GetUserPw(), MAX_USER_PW_BYTE_LENGTH);
+	memcpy_s(redisReqPacket.mUserPw, userPwSize, loginReqPacket.GetUserPw(), userPwSize);
+	
+	mRedis->RequestTask(redisReqPacket.EncodeTask());
 }
 
 void PacketProcessor::ProcRoomEnter(const stPacket& packet)
@@ -285,8 +285,11 @@ void PacketProcessor::ProcRoomLeave(const stPacket& packet)
 
 void PacketProcessor::RedisProcLogin(const RedisTask& task)
 {
-	LoginResRedisPacket loginResRedisPacket(task);
-	ResultResPacket resultResPacket(loginResRedisPacket.GetResult());
+	LoginResRedisPacket loginResRedisPacket;
+	loginResRedisPacket.DecodeTask(task);
+	
+	ResultResPacket resultResPacket(loginResRedisPacket.mResult);
+	
 	SendPacket(
 		task.GetClientId(),
 		task.GetClientId(),
@@ -295,9 +298,9 @@ void PacketProcessor::RedisProcLogin(const RedisTask& task)
 		resultResPacket.GetBodySize()
 	);
 
-	if (ERROR_CODE::NONE == loginResRedisPacket.GetResult())
+	if (ERROR_CODE::NONE == loginResRedisPacket.mResult)
 	{
-		ChatUser chatUser(loginResRedisPacket.GetUserId(), task.GetClientId());
+		ChatUser chatUser(loginResRedisPacket.mUserId, task.GetClientId());
 		mChatUserManager->AddUser(chatUser);
 	}
 }

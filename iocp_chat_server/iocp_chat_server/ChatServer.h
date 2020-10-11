@@ -16,7 +16,7 @@ public:
 
     ~ChatServer();
 
-	Error Init(UINT16 port);
+	Error Init(const UINT16 port);
 
     void Run();
 

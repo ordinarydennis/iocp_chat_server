@@ -8,13 +8,13 @@ class ClientInfo
 public:
 	ClientInfo() = default;
 
-	ClientInfo(const ClientInfo&);
+	ClientInfo(const ClientInfo& clientInfo);
 
-	ClientInfo(UINT32 id);
+	ClientInfo(const UINT32 id);
 	
 	UINT32			GetId() const { return mId;  };
 
-	SOCKET			GetClientSocket() { return mClientSocket; }
+	SOCKET			GetClientSocket() const { return mClientSocket; };
 
 	stPacket		GetRecvPacket();
 
@@ -39,28 +39,28 @@ public:
 	stOverlappedEx*	GetSendOverlappedEx() { return &mSendOverlappedEx; };
 
 
-	UINT64			GetLatestClosedTimeSec() { return mLatestClosedTimeSec; }
+	UINT64			GetLatestClosedTimeSec() const { return mLatestClosedTimeSec; }
 
-	void			SetId(UINT32 id) { mId = id; };
+	void			SetId(const UINT32 id) { mId = id; };
 
-	void			SetClientSocket(SOCKET clientSocket) { mClientSocket = clientSocket; };
+	void			SetClientSocket(const SOCKET clientSocket) { mClientSocket = clientSocket; };
 
 	void			AddRecvPacket(const stPacket& packet);
 
 	void			AddSendPacket(const stPacket& packet);
 
-	void			SetRecvOverlappedEx(stOverlappedEx overlappedEx) { mRecvOverlappedEx = overlappedEx; };
+	void			SetRecvOverlappedEx(const stOverlappedEx& overlappedEx) { mRecvOverlappedEx = overlappedEx; };
 
 	void			SetSendOverlappedEx(const stOverlappedEx& overlappedEx) { mSendOverlappedEx = overlappedEx; };
 
-	void			SetSending(bool bSending);
+	void			SetSending(const bool bSending);
 
-	void			SetIsConnecting(bool isConnecting);
+	void			SetIsConnecting(const bool isConnecting);
 	
 private:
-	void			SetLatestClosedTimeSec(UINT64 latestClosedTimeSec) { mLatestClosedTimeSec = latestClosedTimeSec; };
+	void			SetLatestClosedTimeSec(const UINT64 latestClosedTimeSec) { mLatestClosedTimeSec = latestClosedTimeSec; };
 
-	bool			PostAccept(SOCKET listenSock_, const UINT64 curTimeSec_);
+	bool			PostAccept(const SOCKET listenSocket, const UINT64 curTimeSec);
 
 private:
 	INT32						mId = 0;

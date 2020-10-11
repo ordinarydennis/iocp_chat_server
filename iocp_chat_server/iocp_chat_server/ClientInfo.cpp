@@ -6,14 +6,14 @@
 
 using namespace std::chrono;
 
-ClientInfo::ClientInfo(const ClientInfo& c)
+ClientInfo::ClientInfo(const ClientInfo& clientInfo)
 {
-	mId = c.mId;
+	mId = clientInfo.mId;
 	ZeroMemory(&mRecvOverlappedEx, sizeof(stOverlappedEx));
 	ZeroMemory(&mSendOverlappedEx, sizeof(stOverlappedEx));
 }
 
-ClientInfo::ClientInfo(UINT32 id)
+ClientInfo::ClientInfo(const UINT32 id)
 	:mId(id)
 {
 	ZeroMemory(&mRecvOverlappedEx, sizeof(stOverlappedEx));
@@ -26,7 +26,7 @@ bool ClientInfo::IsSending()
 	return m_bSending;
 }
 
-void ClientInfo::SetSending(bool bSending)
+void ClientInfo::SetSending(const bool bSending)
 {
 	std::lock_guard<std::mutex> guard(mSendingLock);
 	m_bSending = bSending;
@@ -67,7 +67,7 @@ void ClientInfo::PostAccept(SOCKET listenSocket)
 	PostAccept(listenSocket, curTimeSec);
 }
 
-void ClientInfo::SetIsConnecting(bool isConnecting)
+void ClientInfo::SetIsConnecting(const bool isConnecting)
 {
 	std::lock_guard<std::mutex> guard(mIsConnectingLock);
 	mIsConnecting = isConnecting;
@@ -118,7 +118,7 @@ void ClientInfo::AddSendPacket(const stPacket& packet)
 	mSendPacketPool.push_back(packet);
 }
 
-bool ClientInfo::PostAccept(SOCKET listenSocket, const UINT64 curTimeSec_)
+bool ClientInfo::PostAccept(const SOCKET listenSocket, const UINT64 curTimeSec)
 {
 	mLatestClosedTimeSec = UINT64_MAX;
 

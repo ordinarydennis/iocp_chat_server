@@ -6,7 +6,7 @@
 
 using namespace std::chrono;
 
-Error Network::Init(UINT16 port)
+Error Network::Init(const UINT16 port)
 {
 	SetMaxThreadCount();
 
@@ -95,9 +95,7 @@ void Network::CreateClient(const UINT32 maxClientCount)
 	}
 }
 
-//TODO 최흥배
-// 변수 이름 일관성을 지켜주세요~
-Error Network::BindandListen(UINT16 port)
+Error Network::BindandListen(const UINT16 port)
 {
 	SOCKADDR_IN stServerAddr;
 	stServerAddr.sin_family = AF_INET;
@@ -195,7 +193,6 @@ void Network::WokerThread()
 				CloseSocket(pClientInfo);
 				continue;
 			}
-			//ProcRecvOperation(pClientInfo, dwIoSize);
 
 			stOverlappedEx recvOverlappedEx = *pOverlappedEx;
 			recvOverlappedEx.m_wsaBuf.len = dwIoSize;
@@ -231,7 +228,7 @@ void Network::SendPacketThread()
 {
 	while (mSendPacketRun)
 	{
-		bool isIdle = true;
+		static bool isIdle = true;
 		for (UINT32 index = 0; index < mClientInfos.size(); index++)
 		{
 			if (0 == index)
@@ -289,39 +286,13 @@ void Network::ProcAcceptOperation(const stOverlappedEx* pOverlappedEx)
 	++mClientCnt;
 }
 
-//void Network::ProcRecvOperation(ClientInfo* pClientInfo, DWORD dwIoSize)
-//{
-//	AddToClientPoolRecvPacket(pClientInfo, dwIoSize);
-//	PostRecv(pClientInfo);
-//}
-
 void Network::ProcRecvOperation(const stOverlappedEx& recvOverlappedEx)
 {
 	AddToClientPoolRecvPacket(recvOverlappedEx);
 }
 
-//TODO 여기 다시 조사 해보기 stOverlappedEx
-//void Network::ProcSendOperation(ClientInfo* pClientInfo, DWORD dwIoSize)
-//{
-//	//TODO 최흥배
-//	// 데이터를 다 보내었는지 조사하는데 send 패킷 풀에서 데이터를 뺄 필요가 없습니다.
-//	// 이 함수를 호출하는 stOverlappedEx에 보면 이미 보낼 데이터를 가리키는 포인터와 보내는 양이 기록 되어 있습니다.	
-//	stPacket lastSendingPacket = pClientInfo->GetSendPacket().value();
-//	if (dwIoSize == lastSendingPacket.mHeader.mSize)
-//	{
-//		//전송이 완료 됐을때만 pop
-//		pClientInfo->PopSendPacketPool();
-//	}
-//	else
-//	{
-//		printf("[ERROR] 유저 %d 송신 실패.. 재전송 시도..\n", pClientInfo->GetId());
-//	}
-//
-//	pClientInfo->SetSending(false);
-//}
-
 //소켓의 연결을 종료 시킨다.
-void Network::CloseSocket(ClientInfo* pClientInfo, bool bIsForce)
+void Network::CloseSocket(ClientInfo* pClientInfo, const bool bIsForce)
 {
 	struct linger stLinger = { 0, 0 };	// SO_DONTLINGER로 설정
 
@@ -338,10 +309,7 @@ void Network::CloseSocket(ClientInfo* pClientInfo, bool bIsForce)
 	pClientInfo->CloseSocket();
 }
 
-//TODO 최흥배
-// 비동기 요청을 호출하는 함수 이름에는 대부분 Post를 붙였으니 여기도 함수 이름에 Post를 붙이는 것이 일관성이 있지 않을까요?
-//WSASend Overlapped I/O작업을 시킨다.
-bool Network::PostSendMsg(ClientInfo* pClientInfo, const char* pMsg, UINT32 len)
+bool Network::PostSendMsg(ClientInfo* pClientInfo, const char* pMsg, const UINT32 len)
 {
 	DWORD dwRecvNumBytes = 0;
 
@@ -355,7 +323,6 @@ bool Network::PostSendMsg(ClientInfo* pClientInfo, const char* pMsg, UINT32 len)
 	pClientInfo->GetSendOverlappedEx()->m_eOperation = IOOperation::SEND;
 	pClientInfo->GetSendOverlappedEx()->m_clientId = pClientInfo->GetId();
 
-	//TODO 이부분 다시 조사하기
 	int nRet = WSASend(pClientInfo->GetClientSocket(),
 		&(pClientInfo->GetSendOverlappedEx()->m_wsaBuf),
 		1,
@@ -373,17 +340,10 @@ bool Network::PostSendMsg(ClientInfo* pClientInfo, const char* pMsg, UINT32 len)
 	return true;
 }
 
-//TODO 최흥배
-// 비동기 요청에는 보통 Post나 혹은 Begin 또는 Async를 붙입니다. Bind는 그 뜻이 너무 다른 것 같습니다.
-//WSARecv Overlapped I/O 작업을 시킨다.
 bool Network::PostRecv(ClientInfo* pClientInfo)
 {
 	DWORD dwFlag = 0;
 	DWORD dwRecvNumBytes = 0;
-
-	//TODO 최흥배
-	// 아래 버그입니다.
-	// 받기를 완료하면 버퍼의 주소를 패킷처리 스레드로 넘기는데 만약 패킷 처리 스레드가 이 데이터를 처리하기 전에 해당 클라이언트가 패킷을 보내면 앞에 보낸 데이터를 덮어쓰게 됩니다.
 
 	//Overlapped I/O을 위해 각 정보를 셋팅해 준다.
 	pClientInfo->GetRecvOverlappedEx()->m_wsaBuf.len = MAX_SOCKBUF;
@@ -428,7 +388,7 @@ void Network::AccepterThread()
 	}
 }
 
-ClientInfo* Network::GetClientInfo(UINT32 id)
+ClientInfo* Network::GetClientInfo(const UINT32 id)
 {
 	return id >= MAX_CLIENT ? nullptr : &mClientInfos.at(id);
 }
@@ -459,17 +419,10 @@ std::optional<stOverlappedEx> Network::GetClientRecvedPacket()
 		return std::nullopt;
 	}
 	
-	//std::pair<ClientInfo*, size_t> front = mClientPoolRecvedPacket.front();
 	stOverlappedEx front = mClientPoolRecvedPacket.front();
 	mClientPoolRecvedPacket.pop();
 	return front;
 }
-
-//void Network::AddToClientPoolRecvPacket(ClientInfo* c, size_t size)
-//{
-//	std::lock_guard<std::mutex> guard(mRecvPacketLock);
-//	mClientPoolRecvedPacket.push(std::make_pair(c, size));
-//}
 
 void Network::AddToClientPoolRecvPacket(const stOverlappedEx& recvOverlappedEx)
 {
@@ -493,7 +446,7 @@ std::function<void(stPacket)> Network::GetPacketSender()
 	return std::bind(&Network::SendPacket, this, std::placeholders::_1);
 }
 
-void Network::SendData(stPacket packet)
+void Network::SendData(const stPacket& packet)
 {
 	UINT16 packetId = packet.mHeader.mPacket_id;
 	char buff[MAX_SOCKBUF] = { 0, };

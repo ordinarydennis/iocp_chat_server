@@ -1,15 +1,6 @@
 #include "ChatUserManager.h"
 #include "ClientInfo.h"
 
-ChatUserManager::ChatUserManager()
-{
-}
-
-ChatUserManager::~ChatUserManager()
-{
-
-}
-
 ChatUser* ChatUserManager::GetUser(const UINT32 userId)
 {
 	std::lock_guard<std::mutex> guard(mChatUserDictLock);

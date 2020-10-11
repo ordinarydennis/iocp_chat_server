@@ -50,9 +50,6 @@
     <ClCompile Include="PacketProcessor.cpp">
       <Filter>Source Files\Private</Filter>
     </ClCompile>
-    <ClCompile Include="RedisProcessor.cpp">
-      <Filter>Source Files\Private</Filter>
-    </ClCompile>
     <ClCompile Include="Define.cpp">
       <Filter>Source Files\Private</Filter>
     </ClCompile>
@@ -107,9 +104,6 @@
       <Filter>Source Files\Public</Filter>
     </ClInclude>
     <ClInclude Include="PacketProcessor.h">
-      <Filter>Source Files\Public</Filter>
-    </ClInclude>
-    <ClInclude Include="RedisProcessor.h">
       <Filter>Source Files\Public</Filter>
     </ClInclude>
   </ItemGroup>

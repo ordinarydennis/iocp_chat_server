@@ -16,15 +16,15 @@ public:
 
    ~Network() { WSACleanup(); };
 
-    Error           Init(UINT16 serverPort);
+    Error           Init(const UINT16 port);
 
     void            Run();
 
     void            Destroy();
 
-    void            SendData(stPacket packet);
+    void            SendData(const stPacket& packet);
 
-    ClientInfo*     GetClientInfo(UINT32 id);
+    ClientInfo*     GetClientInfo(const UINT32 id);
 
     void            SendPacket(const stPacket& packet);
 
@@ -43,10 +43,9 @@ private:
 
     void            CreateClient(const UINT32 maxClientCount);
 
-    Error           BindandListen(UINT16 port);
+    Error           BindandListen(const UINT16 port);
 
     Error           RegisterListenSocketToIOCP();
-
 
     void            SetWokerThread();
 
@@ -58,27 +57,21 @@ private:
 
     void            ProcAcceptOperation(const stOverlappedEx* pOverlappedEx);
 
-    //void            ProcRecvOperation(ClientInfo* pClientInfo, DWORD dwIoSize);
-
     void            ProcRecvOperation(const stOverlappedEx& recvOverlappedEx);
 
-    //void            ProcSendOperation(ClientInfo* pClientInfo, DWORD dwIoSize);
-
-    bool            PostSendMsg(ClientInfo* pClientInfo, const char* pMsg, UINT32 len);
+    bool            PostSendMsg(ClientInfo* pClientInfo, const char* pMsg, const UINT32 len);
 
     void            SetAccepterThread();
 
     void            AccepterThread();
 
-    void            CloseSocket(ClientInfo* pClientInfo, bool bIsForce = false);
+    void            CloseSocket(ClientInfo* pClientInfo, const bool bIsForce = false);
 
     bool            BindIOCompletionPort(ClientInfo* pClientInfo);
 
     bool            PostRecv(ClientInfo* pClientInfo);
 
     void            DestroyThread();
-
-    //void            AddToClientPoolRecvPacket(ClientInfo* c, size_t size);
 
     void            AddToClientPoolRecvPacket(const stOverlappedEx& recvOverlappedEx);
 
@@ -89,7 +82,6 @@ private:
     bool	                   	mIsWorkerRun    = true;
     bool	                   	mIsAccepterRun  = true;
     bool                        mSendPacketRun  = true;
-    //접속 되어있는 클라이언트 수
     int			                mClientCnt = 0;
     std::vector<std::thread>    mIOWorkerThreads;
     std::thread                 mAccepterThread;
@@ -97,6 +89,5 @@ private:
     std::vector<ClientInfo>     mClientInfos;
 
     std::mutex                  mRecvPacketLock;
-    //std::queue<std::pair<ClientInfo*, size_t>>     mClientPoolRecvedPacket;
     std::queue<stOverlappedEx>     mClientPoolRecvedPacket;
 };

@@ -12,9 +12,9 @@ public:
 
 	~RoomManager() = default;
 	
-	bool IsExistRoom(UINT32 roomNumber);
+	bool IsExistRoom(const UINT32 roomNumber);
 
-	Room* GetRoom(UINT32 roomNumber);
+	Room* GetRoom(const UINT32 roomNumber);
 	
 	void EnterRoom(UINT32 roomNumber, ChatUser* chatUser);
 

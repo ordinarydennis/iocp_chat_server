@@ -5,7 +5,6 @@
 //Define.h 에서 winsock2 를 include CRedisConn.h 에서 winsock를 include 하기 때문에
 //중복 선언 에러 발생
 #include "../thirdparty/CRedisConn.h"
-#include "RedisProcessor.h"
 #include <sstream>
 
 Redis::Redis()
@@ -21,7 +20,7 @@ Redis::~Redis()
 	mConn = nullptr;
 }
 
-Error Redis::Connect(const char* ip, unsigned port)
+Error Redis::Connect(const char* ip, const unsigned port)
 {
 	bool ret = mConn->connect(ip, port);
 	if (false == ret)
@@ -43,8 +42,6 @@ void Redis::RedisThread()
 	while (mIsThreadRun)
 	{
 		auto reqTaskOpt = GetRequestTask();
-		//TODO 최흥배
-		// std::nullopt 로 비교해야 좋을 것 같습니다. GetRequestTask() 에서 std::nullopt를 반환하니 
 		if (std::nullopt == reqTaskOpt)
 		{
 			Sleep(1);
@@ -66,26 +63,29 @@ void Redis::ProcessRedisPacket(const RedisTask& task)
 
 void Redis::ProcLogin(const RedisTask& task)
 {
-	//TODO 최흥배
-	//장래에 복수의 case에서도 처리될 수 있도록 구조화 하기 바랍니다. 패킷 처리쪽처럼
+	LoginReqRedisPacket reqPacket;
+	reqPacket.DecodeTask(task);
+	
 	ERROR_CODE error_code = ERROR_CODE::LOGIN_USER_INVALID_PW;
 
-	LoginReqRedisPacket reqPacket(task);
-	const size_t bufSize = MAX_USER_ID_BYTE_LENGTH + sizeof(ERROR_CODE);
-	char buf[bufSize] = { 0, };
+	LoginResRedisPacket resPacket;
 	std::string pw;
-	if (mConn->get(reqPacket.GetUserId(), pw))
+	
+	if (mConn->get(reqPacket.mUserId, pw))
 	{
-		if (pw.compare(reqPacket.GetUserPw()) == 0)
+		if (pw.compare(reqPacket.mUserPw) == 0)
 		{
-			memcpy_s(buf, strnlen_s(reqPacket.GetUserId(), MAX_USER_PW_BYTE_LENGTH), reqPacket.GetUserId(), strnlen_s(reqPacket.GetUserId(), MAX_USER_PW_BYTE_LENGTH));
+			size_t userIdSize = strnlen_s(reqPacket.mUserId, MAX_USER_PW_BYTE_LENGTH);
+			memcpy_s(resPacket.mUserId, userIdSize, reqPacket.mUserId, userIdSize);
 			error_code = ERROR_CODE::NONE;
 		}
 	}
-	memcpy_s(&buf[MAX_USER_ID_BYTE_LENGTH], sizeof(error_code), &error_code, sizeof(error_code));
-	LoginResRedisPacket resPacket(reqPacket.GetClientId(), RedisTaskID::RESPONSE_LOGIN, buf);
-	ResponseTask(resPacket.GetTask());
 
+	resPacket.mClientId = reqPacket.mClientId;
+	resPacket.mRedisTaskId = RedisTaskID::RESPONSE_LOGIN;;
+	resPacket.mResult = error_code;
+
+	ResponseTask(resPacket.EncodeTask());
 }
 
 void Redis::RequestTask(const RedisTask& task)

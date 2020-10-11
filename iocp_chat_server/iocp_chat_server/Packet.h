@@ -60,7 +60,7 @@ private:
 class RoomUserListNTFPacket
 {
 public:
-	RoomUserListNTFPacket(UINT32 enteredClientId, std::list<ChatUser*>& userList)
+	RoomUserListNTFPacket(UINT32 enteredClientId, std::vector<ChatUser*>& userList)
 	{
 		UINT16 userCount = static_cast<UINT16>(userList.size()) - 1; //자신은 제외
 		memcpy_s(mBody, 1, &userCount, 1);

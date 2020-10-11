@@ -8,7 +8,7 @@ class ChatUser
 public:
 	ChatUser() = default;
 
-	ChatUser(std::string userId, UINT32 clientId);
+	ChatUser(const std::string userId, const UINT32 clientId);
 
 	~ChatUser() = default;
 
@@ -18,7 +18,7 @@ public:
 
 	UINT32				GetRoomNumber() const { return mRoomNumber; };
 
-	void				SetRoomNumber(UINT32 roomNumber) { mRoomNumber = roomNumber; };
+	void				SetRoomNumber(const UINT32 roomNumber) { mRoomNumber = roomNumber; };
 		
 private:
 	std::string			mUserId;

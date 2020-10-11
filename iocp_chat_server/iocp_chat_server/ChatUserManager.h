@@ -8,9 +8,9 @@
 class ChatUserManager
 {
 public:
-	ChatUserManager();
+	ChatUserManager() = default;
 
-	~ChatUserManager();
+	~ChatUserManager() = default;
 
 	ChatUser* GetUser(const UINT32 userId);
 

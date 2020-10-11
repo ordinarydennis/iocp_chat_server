@@ -20,16 +20,15 @@ public:
 
 	~PacketProcessor();
 
-	Error			Init(UINT16 port);
+	Error			Init(const UINT16 port);
 
     void            Run();
 
-    //void            ProcessPacket(std::pair<ClientInfo*, size_t> recvedPacketInfo);
     void            ProcessPacket(const stOverlappedEx& recvOverlappedEx);
 
     void            ProcessRedisPacket(const RedisTask& task);
     
-    void            SendPacket(UINT32 from, UINT32 to, UINT16 packetId, char* body, size_t bodySize);
+    void            SendPacket(const UINT32 from, const UINT32 to, const UINT16 packetId, const char* body, const size_t bodySize);
     
     void            ProcEcho(const stPacket& packet);
     

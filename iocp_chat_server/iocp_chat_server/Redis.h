@@ -15,8 +15,6 @@ namespace RedisCpp
 	class CRedisConn;
 }
 
-class RedisProcessor;
-
 class Redis
 {
 public:
@@ -24,7 +22,7 @@ public:
 
 	~Redis();
 
-	Error Connect(const char* ip, unsigned port);
+	Error Connect(const char* ip, const unsigned port);
 
 	void Run();
 

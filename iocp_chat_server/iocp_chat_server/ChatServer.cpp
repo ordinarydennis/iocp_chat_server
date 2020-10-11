@@ -17,7 +17,7 @@ ChatServer::~ChatServer()
 	WSACleanup();
 }
 
-Error ChatServer::Init(UINT16 port = SERVER_PORT)
+Error ChatServer::Init(const UINT16 port = SERVER_PORT)
 {
 	Error error = Error::NONE;
 
