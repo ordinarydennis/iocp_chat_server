@@ -1,15 +1,16 @@
 #include "ChatServer.h"
 #include "../thirdparty/flags.h"
-#include <iostream>
+#include "CrushDump.h"
 
 int main(int argc, char* argv[])
 {
+	InitCrashDump(1);
+
 	const flags::args args(argc, argv);
 
 	const auto port = args.get<int>("port");
 	if (!port)
 	{
-		std::cerr << "No Port." << std::endl;
 		return static_cast<int>(Error::PORT);
 	}
 

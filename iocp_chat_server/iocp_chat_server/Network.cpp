@@ -228,14 +228,9 @@ void Network::SendPacketThread()
 {
 	while (mSendPacketRun)
 	{
-		static bool isIdle = true;
+		bool isIdle = true;
 		for (UINT32 index = 0; index < mClientInfos.size(); index++)
 		{
-			if (0 == index)
-			{
-				isIdle = true;
-			}
-
 			ClientInfo* clientInfo = &mClientInfos[index];
 			if (clientInfo->IsSending())
 			{ 
@@ -246,15 +241,7 @@ void Network::SendPacketThread()
 			auto sendPacketOpt = clientInfo->GetSendPacket();
 			if (std::nullopt == sendPacketOpt)
 			{
-				//TODO 최흥배
-				// sleep는 for문 밖에서 하는 것이 더 좋습니다. 여기서 하면 불필요하게 if문 호출 수가 늘어납니다.
-
 				//보낼 패킷이 없는 유저
-				//모든 유저 순회 했을 때 보낼 패킷이 있는 유저가 없다면 Sleep(1)
-				if (index == mClientInfos.size() - 1 && true == isIdle)
-				{
-					Sleep(1);
-				}
 				continue;
 			}
 
@@ -262,6 +249,11 @@ void Network::SendPacketThread()
 			clientInfo->SetSending(true);
 			SendData(sendingPacket);
 			isIdle = false;
+		}
+
+		if (isIdle)
+		{
+			Sleep(1);
 		}
 	}
 }

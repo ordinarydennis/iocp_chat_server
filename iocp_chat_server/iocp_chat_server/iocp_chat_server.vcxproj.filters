@@ -53,6 +53,9 @@
     <ClCompile Include="Define.cpp">
       <Filter>Source Files\Private</Filter>
     </ClCompile>
+    <ClCompile Include="CrushDump.cpp">
+      <Filter>Source Files\Private</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ChatServer.h">
@@ -104,6 +107,9 @@
       <Filter>Source Files\Public</Filter>
     </ClInclude>
     <ClInclude Include="PacketProcessor.h">
+      <Filter>Source Files\Public</Filter>
+    </ClInclude>
+    <ClInclude Include="CrushDump.h">
       <Filter>Source Files\Public</Filter>
     </ClInclude>
   </ItemGroup>
