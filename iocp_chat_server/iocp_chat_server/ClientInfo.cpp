@@ -45,7 +45,7 @@ void ClientInfo::CloseSocket()
 	SetClientSocket(INVALID_SOCKET);
 }
 
-void ClientInfo::PostAccept(SOCKET listenSocket)
+void ClientInfo::AsyncAccept(SOCKET listenSocket)
 {
 	if (IsConnecting())
 	{
@@ -64,7 +64,7 @@ void ClientInfo::PostAccept(SOCKET listenSocket)
 		return;
 	}
 		
-	PostAccept(listenSocket, curTimeSec);
+	PostAccept(listenSocket);
 }
 
 void ClientInfo::SetIsConnecting(const bool isConnecting)
@@ -118,7 +118,7 @@ void ClientInfo::AddSendPacket(const stPacket& packet)
 	mSendPacketPool.push_back(packet);
 }
 
-bool ClientInfo::PostAccept(const SOCKET listenSocket, const UINT64 curTimeSec)
+bool ClientInfo::PostAccept(const SOCKET listenSocket)
 {
 	mLatestClosedTimeSec = UINT64_MAX;
 

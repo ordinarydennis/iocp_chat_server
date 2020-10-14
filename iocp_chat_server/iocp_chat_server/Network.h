@@ -89,5 +89,5 @@ private:
     std::vector<ClientInfo>     mClientInfos;
 
     std::mutex                  mRecvPacketLock;
-    std::queue<stOverlappedEx>     mClientPoolRecvedPacket;
+    std::queue<stOverlappedEx>  mClientPoolRecvedPacket;
 };

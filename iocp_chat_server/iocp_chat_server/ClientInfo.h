@@ -32,7 +32,7 @@ public:
 
 	void			CloseSocket();
 
-	void			PostAccept(SOCKET listenSocket);
+	void			AsyncAccept(SOCKET listenSocket);
 
 	stOverlappedEx*	GetRecvOverlappedEx() { return &mRecvOverlappedEx; };
 
@@ -60,7 +60,7 @@ public:
 private:
 	void			SetLatestClosedTimeSec(const UINT64 latestClosedTimeSec) { mLatestClosedTimeSec = latestClosedTimeSec; };
 
-	bool			PostAccept(const SOCKET listenSocket, const UINT64 curTimeSec);
+	bool			PostAccept(const SOCKET listenSocket);
 
 private:
 	INT32						mId = 0;
@@ -85,5 +85,5 @@ private:
 	bool						mIsConnecting = false;
 	std::mutex                  mIsConnectingLock;
 
-	UINT64						mLatestClosedTimeSec = 0;;
+	UINT64						mLatestClosedTimeSec = 0;
 };

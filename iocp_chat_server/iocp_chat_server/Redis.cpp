@@ -20,7 +20,7 @@ Redis::~Redis()
 	mConn = nullptr;
 }
 
-Error Redis::Connect(const char* ip, const unsigned port)
+Error Redis::Connect(const char* ip, const UINT16 port)
 {
 	bool ret = mConn->connect(ip, port);
 	if (false == ret)

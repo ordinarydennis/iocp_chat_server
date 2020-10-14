@@ -61,7 +61,7 @@ Error Network::WinsockStartup()
 void Network::SetMaxThreadCount()
 {
 	//WaingThread Queue에 대기 상태로 넣을 쓰레드들 생성 권장되는 개수 : (cpu개수 * 2) + 1 
-	mMaxThreadCount = std::thread::hardware_concurrency() * 2 + 1;
+	mMaxThreadCount = static_cast<UINT16>(std::thread::hardware_concurrency() * 2 + 1);
 }
 
 Error Network::CreateListenSocket()
@@ -376,7 +376,7 @@ void Network::AccepterThread()
 	{
 		for (auto& clientInfo : mClientInfos)
 		{
-			clientInfo.PostAccept(mListenSocket);
+			clientInfo.AsyncAccept(mListenSocket);
 		}
 
 		Sleep(1);

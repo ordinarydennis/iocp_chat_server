@@ -2,11 +2,6 @@
 
 #include "Define.h"
 
-#include <vector>
-#include <thread>
-#include <memory>
-#include <unordered_map>
-
 class PacketProcessor;
 
 class ChatServer

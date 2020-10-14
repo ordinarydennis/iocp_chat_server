@@ -12,14 +12,14 @@ public:
 
 	~ChatUser() = default;
 
-	std::string			GetUserId()		const { return mUserId; };
+	std::string			GetUserId() const;
 
-	UINT32				GetClientId()	const { return mClientId; }
+	UINT32				GetClientId()  const;
 
-	UINT32				GetRoomNumber() const { return mRoomNumber; };
+	UINT32				GetRoomNumber()  const;
 
-	void				SetRoomNumber(const UINT32 roomNumber) { mRoomNumber = roomNumber; };
-		
+	void				SetRoomNumber(const UINT32 roomNumber);
+
 private:
 	std::string			mUserId;
 	UINT32				mClientId = 0;

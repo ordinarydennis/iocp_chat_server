@@ -22,7 +22,7 @@ public:
 
 	~Redis();
 
-	Error Connect(const char* ip, const unsigned port);
+	Error Connect(const char* ip, const UINT16 port);
 
 	void Run();
 

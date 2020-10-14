@@ -8,7 +8,7 @@ int main(int argc, char* argv[])
 
 	const flags::args args(argc, argv);
 
-	const auto port = args.get<int>("port");
+	const auto port = args.get<UINT16>("port");
 	if (!port)
 	{
 		return static_cast<int>(Error::PORT);

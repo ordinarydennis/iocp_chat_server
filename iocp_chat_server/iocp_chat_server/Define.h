@@ -5,7 +5,6 @@
 #include <Ws2tcpip.h>
 #include <queue>
 
-
 enum class Error
 {
     NONE,
