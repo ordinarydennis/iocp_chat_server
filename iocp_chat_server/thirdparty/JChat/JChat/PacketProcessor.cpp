@@ -14,6 +14,8 @@ namespace JChat
 	{
 		mNetwork = new JNet::Network;
 		mRedis = new JNet::Redis;
+		mChatUserManager = new ChatUserManager;
+		mRoomManager = new RoomManager;
 	}
 
 	PacketProcessor::~PacketProcessor()
@@ -23,6 +25,12 @@ namespace JChat
 
 		delete mRedis;
 		mRedis = nullptr;
+
+		delete mChatUserManager;
+		mChatUserManager = nullptr;
+		
+		delete mRoomManager;
+		mRoomManager = nullptr;
 	}
 
 	JCommon::ERROR_CODE PacketProcessor::Init(const UINT16 port)
