@@ -53,7 +53,7 @@ private:
     using receiver = void(PacketProcessor::*)(const stPacket& p);
     std::unordered_map<PacketID, receiver>  mRecvPacketProcDict;
 
-    using RedisReceiver = void(PacketProcessor::*)(const RedisTask& p);
+    using RedisReceiver = void(PacketProcessor::*)(const RedisTask& task);
     std::unordered_map<RedisTaskID, RedisReceiver>  mRecvRedisPacketProcDict;
 
     std::function<void(stPacket)>           mPacketSender;
