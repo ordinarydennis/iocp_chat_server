@@ -3,6 +3,7 @@
 
 #pragma comment(lib,"JChat.lib")
 #include "Service.h"
+#include "../thirdparty/JChat/JChat/Define.h"
 #include "CrushDump.h"
 
 int main(int argc, char* argv[])
@@ -17,10 +18,18 @@ int main(int argc, char* argv[])
 		return static_cast<int>(JCommon::ERROR_CODE::PORT);
 	}
 
-	JChat::Service service;
 
 	JCommon::ERROR_CODE errorCode = JCommon::ERROR_CODE::NONE;
-	errorCode = service.Init(*port);
+
+
+	JChat::ServiceArgs serviceArgs;
+
+	serviceArgs.mPort = *port;
+	serviceArgs.mMaxRoomCount = 10;
+
+	JChat::Service service;
+	//서버 설정 클래스를 만들어서 넘겨주자
+	errorCode = service.Init(serviceArgs);
 	if (JCommon::ERROR_CODE::NONE != errorCode)
 	{
 		printf("[ERROR] Error Number: %d, Get Last Error: %d\n", errorCode, WSAGetLastError());
@@ -30,31 +39,7 @@ int main(int argc, char* argv[])
 	service.Run();
 	service.Destroy();
 
+	return static_cast<int>(JCommon::ERROR_CODE::NONE);
 
-	return 0;
-	//InitCrashDump(1);
-
-	//const flags::args args(argc, argv);
-
-	//const auto port = args.get<UINT16>("port");
-	//if (!port)
-	//{
-	//	return static_cast<int>(Error::PORT);
-	//}
-
-	//ChatServer chatServer;
-
-	//Error error = Error::NONE;
-	//error = chatServer.Init(*port);
-	//if (Error::NONE != error)
-	//{
-	//	printf("[ERROR] Error Number: %d, Get Last Error: %d\n", error, WSAGetLastError());
-	//	return static_cast<int>(error);
-	//}
-
-	//chatServer.Run();
-	//chatServer.Destroy();
-
-	//return static_cast<int>(Error::NONE);
 }
 

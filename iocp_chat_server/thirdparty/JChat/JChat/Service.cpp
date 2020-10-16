@@ -1,5 +1,6 @@
 #include "Service.h"
 #include "PacketProcessor.h"
+#include "Define.h"
 #include <iostream>
 #include <sstream>
 
@@ -16,10 +17,10 @@ namespace JChat
 		mPacketProcessor = nullptr;
 	}
 
-	JCommon::ERROR_CODE Service::Init(const UINT16 port)
+	JCommon::ERROR_CODE Service::Init(const ServiceArgs& args)
 	{
 		JCommon::ERROR_CODE errorCode = JCommon::ERROR_CODE::NONE;
-		errorCode = mPacketProcessor->Init(port);
+		errorCode = mPacketProcessor->Init(args);
 		return errorCode;
 	}
 

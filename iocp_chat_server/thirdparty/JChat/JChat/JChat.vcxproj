@@ -31,6 +31,7 @@
   <ItemGroup>
     <ClInclude Include="ChatUser.h" />
     <ClInclude Include="ChatUserManager.h" />
+    <ClInclude Include="Define.h" />
     <ClInclude Include="PacketProcessor.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClInclude>

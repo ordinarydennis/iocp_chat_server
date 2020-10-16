@@ -4,6 +4,26 @@
 
 namespace JChat
 {
+	void Room::SetRoomNumber(UINT32 roomNumber)
+	{
+		mRoomNumber = roomNumber;
+	}
+
+	UINT32 Room::GetRoomNumber() const
+	{
+		return mRoomNumber;
+	}
+
+	std::vector<ChatUser*>* Room::GetUserList() 
+	{ 
+		return &mUserList; 
+	};
+
+	void Room::AddUser(ChatUser* chatUser)
+	{ 
+		mUserList.push_back(chatUser); 
+	}
+
 	void Room::RemoveUser(const ChatUser* chatUser)
 	{
 		mUserList.erase(std::remove(mUserList.begin(), mUserList.end(), chatUser), mUserList.end());

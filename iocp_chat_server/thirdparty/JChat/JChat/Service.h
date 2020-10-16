@@ -7,6 +7,8 @@ namespace JChat
 {
 	class PacketProcessor;
 
+	struct ServiceArgs;
+
 	class Service
 	{
 	public:
@@ -14,7 +16,7 @@ namespace JChat
 		
 		~Service();
 
-		JCommon::ERROR_CODE Init(const UINT16 port);
+		JCommon::ERROR_CODE Init(const ServiceArgs& args);
 
 		void Run();
 

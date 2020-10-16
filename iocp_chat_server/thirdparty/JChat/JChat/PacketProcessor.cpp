@@ -2,6 +2,7 @@
 #include "ChatUserManager.h"
 #include "ChatUser.h"
 #include "RoomManager.h"
+#include "Define.h"
 #include "../../JNet/JNet/Network.h"
 #include "../../JNet/JNet/Redis.h"
 #include "../../JNet/JNet/RedisConfig.h"
@@ -33,10 +34,10 @@ namespace JChat
 		mRoomManager = nullptr;
 	}
 
-	JCommon::ERROR_CODE PacketProcessor::Init(const UINT16 port)
+	JCommon::ERROR_CODE PacketProcessor::Init(const ServiceArgs& args)
 	{
 		JCommon::ERROR_CODE errorCode = JCommon::ERROR_CODE::NONE;
-		errorCode = mNetwork->Init(port);
+		errorCode = mNetwork->Init(args.mPort);
 		if (JCommon::ERROR_CODE::NONE != errorCode)
 		{
 			return errorCode;
@@ -47,6 +48,8 @@ namespace JChat
 		{
 			return errorCode;
 		}
+
+		mRoomManager->Init(args.mMaxRoomCount);
 
 		RegisterRecvProc();
 
@@ -160,18 +163,20 @@ namespace JChat
 
 	void PacketProcessor::ProcLogin(const JCommon::stPacket& packet)
 	{
-		JCommon::LoginReqPacket loginReqPacket;
-		loginReqPacket.SetPacket(packet.mBody);
+		const JCommon::LoginReqPacket* loginReqPacket = reinterpret_cast<const JCommon::LoginReqPacket*>(&packet.mBody);
+		
+		loginReqPacket->mUserId;
+		loginReqPacket->mUserPw;
 
-		printf("Login User Id : %s passwd : %s \n", loginReqPacket.GetUserId(), loginReqPacket.GetUserPw());
+		printf("Login User Id : %s passwd : %s \n", loginReqPacket->mUserId, loginReqPacket->mUserPw);
 
 		JNet::LoginReqRedisPacket redisReqPacket;
 		redisReqPacket.mClientId = packet.mClientFrom;
 		redisReqPacket.mRedisTaskId = JNet::REDIS_TASK_ID::REQUEST_LOGIN;
-		size_t userIdSize = strnlen_s(loginReqPacket.GetUserId(), JCommon::MAX_USER_ID_BYTE_LENGTH);
-		memcpy_s(redisReqPacket.mUserId, userIdSize, loginReqPacket.GetUserId(), userIdSize);
-		size_t userPwSize = strnlen_s(loginReqPacket.GetUserPw(), JCommon::MAX_USER_PW_BYTE_LENGTH);
-		memcpy_s(redisReqPacket.mUserPw, userPwSize, loginReqPacket.GetUserPw(), userPwSize);
+		size_t userIdSize = strnlen_s(loginReqPacket->mUserId, JCommon::MAX_USER_ID_BYTE_LENGTH);
+		memcpy_s(redisReqPacket.mUserId, userIdSize, loginReqPacket->mUserPw, userIdSize);
+		size_t userPwSize = strnlen_s(loginReqPacket->mUserId, JCommon::MAX_USER_PW_BYTE_LENGTH);
+		memcpy_s(redisReqPacket.mUserPw, userPwSize, loginReqPacket->mUserPw, userPwSize);
 
 		mRedis->RequestTask(redisReqPacket.EncodeTask());
 	}
@@ -187,42 +192,81 @@ namespace JChat
 		JCommon::RoomEnterReqPacket reqPacket(packet.mBody, packet.GetBodySize());
 
 		UINT32 roomNumber = reqPacket.GetRoomNumber();
-		mRoomManager->EnterRoom(roomNumber, chatUser);
+		if (false == mRoomManager->EnterRoom(roomNumber, chatUser))
+		{
+			return;
+		}
+
 		chatUser->SetRoomNumber(roomNumber);
 
-		JCommon::ResultResPacket resultResPacket(JCommon::CLIENT_ERROR_CODE::NONE);
+		JCommon::ResultResPacket resultResPacket;
+		resultResPacket.mResult = JCommon::CLIENT_ERROR_CODE::NONE;
 		SendPacket(
 			packet.mClientFrom,
 			packet.mClientFrom,
 			static_cast<UINT16>(JCommon::PACKET_ID::ROOM_ENTER_RES),
-			resultResPacket.GetBody(),
-			resultResPacket.GetBodySize()
+			reinterpret_cast<char*>(&resultResPacket),
+			sizeof(resultResPacket)
 		);
 
 		//방 유저 리스트 내려주기
 		Room* room = mRoomManager->GetRoom(roomNumber);
 		auto userList = room->GetUserList();
 		UINT16 userCount = static_cast<UINT16>(userList->size()) - 1; //자신은 제외
+		size_t totlaBodySize = 0;
 		if (0 < userCount)
 		{
-			//TODO RoomUserListNTFPacket가 charUser를 알아야 하는데 이부분 수정 할 것
-			//JCommon::RoomUserListNTFPacket roomUserListNTFPacket(chatUser->GetClientId(), *userList);
-			//SendPacket(
-			//	packet.mClientFrom,
-			//	packet.mClientFrom,
-			//	static_cast<UINT16>(PACKET_ID::ROOM_USER_LIST_NTF),
-			//	roomUserListNTFPacket.GetBody(),
-			//	roomUserListNTFPacket.GetBodySize()
-			//);
+			JCommon::RoomUserListNTFPacket roomUserListNTFPacket;
+			memcpy_s(roomUserListNTFPacket.mBody, 1, &userCount, 1);
+			totlaBodySize++;
+			for (const auto& user : *userList)
+			{
+				UINT64 userUniqueId = user->GetClientId();
+				//자기 자신은 리스트에서 제외한다.
+				if (userUniqueId == chatUser->GetClientId())
+				{
+					continue;
+				}
+
+				const size_t userUniqueIdSize = sizeof(userUniqueId);
+				const size_t bodySize = userUniqueIdSize + JCommon::MAX_USER_ID_BYTE_LENGTH;
+
+				char body[bodySize] = { 0, };
+				size_t idLen = user->GetUserId().length();
+				memcpy_s(body, userUniqueIdSize, &userUniqueId, userUniqueIdSize);
+				memcpy_s(&body[userUniqueIdSize], 1, &idLen, 1);
+				memcpy_s(&body[userUniqueIdSize + 1], idLen, user->GetUserId().c_str(), idLen);
+
+				size_t userDataSize = userUniqueIdSize + 1 + idLen;
+				memcpy_s(&roomUserListNTFPacket.mBody[totlaBodySize], userDataSize, body, userDataSize);
+				totlaBodySize += userDataSize;
+			}
+
+			SendPacket(
+				packet.mClientFrom,
+				packet.mClientFrom,
+				static_cast<UINT16>(JCommon::PACKET_ID::ROOM_USER_LIST_NTF),
+				reinterpret_cast<char*>(&roomUserListNTFPacket),
+				totlaBodySize
+			);
 		}
 
 		//방 유저들에게 노티
-		JCommon::RoomEnterNTFPacket roomEnterNTFPacket(chatUser->GetClientId(), chatUser->GetUserId());
+		JCommon::RoomEnterNTFPacket roomEnterNTFPacket;
+		roomEnterNTFPacket.mUniqueId = chatUser->GetClientId();
+		roomEnterNTFPacket.uidLen = static_cast<char>(chatUser->GetUserId().length());
+		memcpy_s(
+			roomEnterNTFPacket.mUserId, 
+			roomEnterNTFPacket.uidLen, 
+			chatUser->GetUserId().c_str(),
+			chatUser->GetUserId().length()
+		);
+
 		room->Notify(
 			chatUser->GetClientId(),
 			static_cast<UINT16>(JCommon::PACKET_ID::ROOM_NEW_USER_NTF),
-			roomEnterNTFPacket.GetBody(),
-			roomEnterNTFPacket.GetBodySize(),
+			reinterpret_cast<char*>(&roomEnterNTFPacket),
+			sizeof(roomEnterNTFPacket),
 			mPacketSender
 		);
 	}
@@ -235,23 +279,35 @@ namespace JChat
 		{
 			return;
 		}
+		
+		JCommon::RoomChatReqPacket roomChatReqPacket;
+		
+		memcpy_s(roomChatReqPacket.mUserId, 
+			chatUser->GetUserId().length(), 
+			chatUser->GetUserId().c_str(), 
+			chatUser->GetUserId().length());
 
-		JCommon::RoomChatReqPacket roomChatReqPacket(chatUser->GetUserId(), packet.mBody, strnlen_s(packet.mBody, JCommon::MAX_SOCKBUF));
+		memcpy_s(roomChatReqPacket.msg,
+			strnlen_s(packet.mBody, JCommon::MAX_CHAT_MSG_SIZE),
+			packet.mBody,
+			strnlen_s(packet.mBody, JCommon::MAX_CHAT_MSG_SIZE));
+
 		room->Notify(
 			packet.mClientFrom,
 			static_cast<UINT16>(JCommon::PACKET_ID::ROOM_CHAT_NOTIFY),
-			roomChatReqPacket.GetBody(),
-			roomChatReqPacket.GetBodySize(),
+			reinterpret_cast<char*>(&roomChatReqPacket),
+			sizeof(roomChatReqPacket),
 			mPacketSender
 		);
 
-		JCommon::ResultResPacket resultResPacket(JCommon::CLIENT_ERROR_CODE::NONE);
+		JCommon::ResultResPacket resultResPacket;
+		resultResPacket.mResult = JCommon::CLIENT_ERROR_CODE::NONE;
 		SendPacket(
 			packet.mClientFrom,
 			packet.mClientFrom,
 			static_cast<UINT16>(JCommon::PACKET_ID::ROOM_CHAT_RES),
-			resultResPacket.GetBody(),
-			resultResPacket.GetBodySize()
+			reinterpret_cast<char*>(&resultResPacket),
+			sizeof(resultResPacket)
 		);
 	}
 
@@ -264,25 +320,26 @@ namespace JChat
 			return;
 		}
 
-		JCommon::RoomLeaveNTFPacket roomLeaveNTFPacket(chatUser->GetClientId());
-
+		JCommon::RoomLeaveNTFPacket roomLeaveNTFPacket;
+		roomLeaveNTFPacket.mUniqueId = chatUser->GetClientId();
 		room->Notify(
 			packet.mClientFrom,
 			static_cast<UINT16>(JCommon::PACKET_ID::ROOM_LEAVE_USER_NTF),
-			roomLeaveNTFPacket.GetBody(),
-			roomLeaveNTFPacket.GetBodySize(),
+			reinterpret_cast<char*>(&roomLeaveNTFPacket),
+			sizeof(roomLeaveNTFPacket),
 			mPacketSender
 		);
 
 		room->RemoveUser(chatUser);
 
-		JCommon::ResultResPacket resultResPacket(JCommon::CLIENT_ERROR_CODE::NONE);
+		JCommon::ResultResPacket resultResPacket;
+		resultResPacket.mResult = JCommon::CLIENT_ERROR_CODE::NONE;
 		SendPacket(
 			packet.mClientFrom,
 			packet.mClientFrom,
 			static_cast<UINT16>(JCommon::PACKET_ID::ROOM_LEAVE_RES),
-			resultResPacket.GetBody(),
-			resultResPacket.GetBodySize()
+			reinterpret_cast<char*>(&resultResPacket),
+			sizeof(resultResPacket)
 		);
 	}
 
@@ -291,14 +348,15 @@ namespace JChat
 		JNet::LoginResRedisPacket loginResRedisPacket;
 		loginResRedisPacket.DecodeTask(task);
 
-		JCommon::ResultResPacket resultResPacket(loginResRedisPacket.mResult);
+		JCommon::ResultResPacket resultResPacket;
+		resultResPacket.mResult = loginResRedisPacket.mResult;
 
 		SendPacket(
 			task.GetClientId(),
 			task.GetClientId(),
 			static_cast<UINT16>(JCommon::PACKET_ID::LOGIN_RES),
-			resultResPacket.GetBody(),
-			resultResPacket.GetBodySize()
+			reinterpret_cast<char*>(&resultResPacket),
+			sizeof(resultResPacket)
 		);
 
 		if (JCommon::CLIENT_ERROR_CODE::NONE == loginResRedisPacket.mResult)

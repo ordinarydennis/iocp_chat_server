@@ -12,13 +12,17 @@ namespace JChat
 	class Room
 	{
 	public:
-		UINT32 GetRoomNumber() const { return mRoomNumber; };
+		Room() = default;
 
-		std::vector<ChatUser*>* GetUserList() { return &mUserList; };
+		~Room() = default;
 
-		void SetRoomNumber(const UINT32 roomNumber) { mRoomNumber = roomNumber; };
+		void SetRoomNumber(const UINT32 roomNumber);
+		
+		UINT32 GetRoomNumber() const;
 
-		void AddUser(ChatUser* chatUser) { mUserList.push_back(chatUser); };
+		std::vector<ChatUser*>* GetUserList();
+
+		void AddUser(ChatUser* chatUser);
 
 		void RemoveUser(const ChatUser* chatUser);
 

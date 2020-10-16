@@ -59,5 +59,8 @@
     <ClInclude Include="RoomManager.h">
       <Filter>Source Files\public</Filter>
     </ClInclude>
+    <ClInclude Include="Define.h">
+      <Filter>Source Files\public</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

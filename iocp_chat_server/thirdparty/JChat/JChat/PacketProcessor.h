@@ -25,6 +25,8 @@ namespace JChat
 
 	class RoomManager;
 
+	struct ServiceArgs;
+
 	class PacketProcessor
 	{
 	public:
@@ -32,7 +34,7 @@ namespace JChat
 
 		~PacketProcessor();
 
-		JCommon::ERROR_CODE Init(const UINT16 port);
+		JCommon::ERROR_CODE Init(const ServiceArgs& arg);
 
 		void            Run();
 

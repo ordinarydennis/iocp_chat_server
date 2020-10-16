@@ -20,95 +20,11 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ChatServer.cpp">
-      <Filter>Source Files\Private</Filter>
-    </ClCompile>
-    <ClCompile Include="Network.cpp">
-      <Filter>Source Files\Private</Filter>
-    </ClCompile>
-    <ClCompile Include="ClientInfo.cpp">
-      <Filter>Source Files\Private</Filter>
-    </ClCompile>
-    <ClCompile Include="Redis.cpp">
-      <Filter>Source Files\Private</Filter>
-    </ClCompile>
-    <ClCompile Include="RedisTask.cpp">
-      <Filter>Source Files\Private</Filter>
-    </ClCompile>
-    <ClCompile Include="Room.cpp">
-      <Filter>Source Files\Private</Filter>
-    </ClCompile>
-    <ClCompile Include="RoomManager.cpp">
-      <Filter>Source Files\Private</Filter>
-    </ClCompile>
-    <ClCompile Include="ChatUser.cpp">
-      <Filter>Source Files\Private</Filter>
-    </ClCompile>
-    <ClCompile Include="ChatUserManager.cpp">
-      <Filter>Source Files\Private</Filter>
-    </ClCompile>
-    <ClCompile Include="PacketProcessor.cpp">
-      <Filter>Source Files\Private</Filter>
-    </ClCompile>
-    <ClCompile Include="Define.cpp">
-      <Filter>Source Files\Private</Filter>
-    </ClCompile>
     <ClCompile Include="CrushDump.cpp">
       <Filter>Source Files\Private</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ChatServer.h">
-      <Filter>Source Files\Public</Filter>
-    </ClInclude>
-    <ClInclude Include="Define.h">
-      <Filter>Source Files\Public</Filter>
-    </ClInclude>
-    <ClInclude Include="Network.h">
-      <Filter>Source Files\Public</Filter>
-    </ClInclude>
-    <ClInclude Include="NetworkConfig.h">
-      <Filter>Source Files\Public</Filter>
-    </ClInclude>
-    <ClInclude Include="ServerConfig.h">
-      <Filter>Source Files\Public</Filter>
-    </ClInclude>
-    <ClInclude Include="ClientInfo.h">
-      <Filter>Source Files\Public</Filter>
-    </ClInclude>
-    <ClInclude Include="Packet.h">
-      <Filter>Source Files\Public</Filter>
-    </ClInclude>
-    <ClInclude Include="Redis.h">
-      <Filter>Source Files\Public</Filter>
-    </ClInclude>
-    <ClInclude Include="RedisConfig.h">
-      <Filter>Source Files\Public</Filter>
-    </ClInclude>
-    <ClInclude Include="RedisDefine.h">
-      <Filter>Source Files\Public</Filter>
-    </ClInclude>
-    <ClInclude Include="RedisTask.h">
-      <Filter>Source Files\Public</Filter>
-    </ClInclude>
-    <ClInclude Include="RedisPacket.h">
-      <Filter>Source Files\Public</Filter>
-    </ClInclude>
-    <ClInclude Include="Room.h">
-      <Filter>Source Files\Public</Filter>
-    </ClInclude>
-    <ClInclude Include="RoomManager.h">
-      <Filter>Source Files\Public</Filter>
-    </ClInclude>
-    <ClInclude Include="ChatUser.h">
-      <Filter>Source Files\Public</Filter>
-    </ClInclude>
-    <ClInclude Include="ChatUserManager.h">
-      <Filter>Source Files\Public</Filter>
-    </ClInclude>
-    <ClInclude Include="PacketProcessor.h">
-      <Filter>Source Files\Public</Filter>
-    </ClInclude>
     <ClInclude Include="CrushDump.h">
       <Filter>Source Files\Public</Filter>
     </ClInclude>
