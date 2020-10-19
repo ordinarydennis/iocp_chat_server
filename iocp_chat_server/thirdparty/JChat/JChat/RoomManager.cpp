@@ -2,46 +2,50 @@
 
 namespace JChat
 {
-	void RoomManager::Init(const UINT32 maxRoomCount)
+	void RoomManager::Init(const UINT32 roomStartIndex, const UINT32 maxRoomUserCount)
 	{
-		mMaxRoomCount = maxRoomCount;
-		CreateRooms(mMaxRoomCount);
-	}
-
-	bool RoomManager::IsExistRoom(const UINT32 roomNumber)
-	{
-		auto item = mRoomDict.find(roomNumber);
-		return (item != mRoomDict.end()) ? true : false;
+		mRoomStartIndex = roomStartIndex;
+		mMaxRoomUserCount = maxRoomUserCount;
+		CreateRooms();
 	}
 
 	Room* RoomManager::GetRoom(const UINT32 roomNumber)
 	{
-		if (false == IsExistRoom(roomNumber))
+		UINT32 roomIndex = roomNumber - mRoomStartIndex;
+
+		if (roomIndex >= RoomManager::MAX_ROOM_COUNT)
 		{
 			return nullptr;
 		}
 
-		return &mRoomDict[roomNumber];
+		return &mRooms[roomIndex];
 	}
 
-	void RoomManager::CreateRooms(const UINT32 maxRoomCount)
+	void RoomManager::CreateRooms()
 	{
-		for (UINT32 i = 0; i < maxRoomCount; i++)
+		for (UINT32 i = 0; i < RoomManager::MAX_ROOM_COUNT; i++)
 		{
 			mRooms.emplace_back();
-			mRooms[i].SetRoomNumber(i);
+			mRooms[i].SetRoomNumber(mRoomStartIndex + i);
 		}
 	}
 
-	bool RoomManager::EnterRoom(UINT32 roomNumber, ChatUser* chatUser)
-	{
-		bool isEnter = false;
-		if (roomNumber < mMaxRoomCount)
+	JCommon::CLIENT_ERROR_CODE RoomManager::EnterRoom(UINT32 roomNumber, ChatUser* chatUser)
+	{	
+		UINT32 roomIndex = roomNumber - mRoomStartIndex;
+		
+		if (roomIndex >= RoomManager::MAX_ROOM_COUNT)
 		{
-			mRoomDict[roomNumber].AddUser(chatUser);
-			isEnter = true;
+			return JCommon::CLIENT_ERROR_CODE::INVALID_ROOM_NUMBER;
 		}
 
-		return isEnter;
+		if (mRooms[roomIndex].GetUserList()->size() >= mMaxRoomUserCount)
+		{
+			return JCommon::CLIENT_ERROR_CODE::FULL_ROOM_USER;
+		}
+
+		mRooms[roomIndex].AddUser(chatUser);
+
+		return JCommon::CLIENT_ERROR_CODE::NONE;
 	}
 }

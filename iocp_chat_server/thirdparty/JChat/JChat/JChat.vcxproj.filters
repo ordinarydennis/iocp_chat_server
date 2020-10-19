@@ -19,6 +19,12 @@
     <Filter Include="Source Files\public">
       <UniqueIdentifier>{2749957c-7a31-4ad3-8dca-6a112e9241a3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\private\Proc">
+      <UniqueIdentifier>{df333def-c8ab-431e-9554-20858d8a75b9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\private\RedisProc">
+      <UniqueIdentifier>{6a649039-8c53-4c44-a3d3-3e87afb9cec2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Service.cpp">
@@ -37,6 +43,27 @@
       <Filter>Source Files\private</Filter>
     </ClCompile>
     <ClCompile Include="RoomManager.cpp">
+      <Filter>Source Files\private</Filter>
+    </ClCompile>
+    <ClCompile Include="ProcEcho.cpp">
+      <Filter>Source Files\private\Proc</Filter>
+    </ClCompile>
+    <ClCompile Include="ProcLogin.cpp">
+      <Filter>Source Files\private\Proc</Filter>
+    </ClCompile>
+    <ClCompile Include="ProcRoomEnter.cpp">
+      <Filter>Source Files\private\Proc</Filter>
+    </ClCompile>
+    <ClCompile Include="ProcRoomChat.cpp">
+      <Filter>Source Files\private\Proc</Filter>
+    </ClCompile>
+    <ClCompile Include="ProcRoomLeave.cpp">
+      <Filter>Source Files\private\Proc</Filter>
+    </ClCompile>
+    <ClCompile Include="RedisProcLogin.cpp">
+      <Filter>Source Files\private\RedisProc</Filter>
+    </ClCompile>
+    <ClCompile Include="Define.cpp">
       <Filter>Source Files\private</Filter>
     </ClCompile>
   </ItemGroup>

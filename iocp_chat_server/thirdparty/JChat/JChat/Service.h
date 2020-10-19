@@ -18,12 +18,12 @@ namespace JChat
 
 		JCommon::ERROR_CODE Init(const ServiceArgs& args);
 
-		void Run();
+		void				Run();
 
-		void Destroy();
+		void				Destroy();
 
 	private:
-		void Waiting();
+		void				Waiting();
 
 	private:
 		PacketProcessor* mPacketProcessor = nullptr;

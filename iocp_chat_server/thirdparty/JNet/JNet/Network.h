@@ -18,7 +18,7 @@ namespace JNet
 
 		~Network() = default;
 
-		JCommon::ERROR_CODE Init(const UINT16 port);
+		JCommon::ERROR_CODE Init(const UINT32 maxClientCount, const UINT16 port);
 
 		void				Run();
 
@@ -78,6 +78,7 @@ namespace JNet
 		void				SendPacket(const JCommon::stPacket& packet);
 
 	private:
+		UINT32						mMaxClientCount = 0;
 		UINT16                      mMaxThreadCount = 0;
 		SOCKET                      mListenSocket = INVALID_SOCKET;
 		HANDLE                  	mIOCPHandle = INVALID_HANDLE_VALUE;

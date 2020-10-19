@@ -3,7 +3,7 @@
 
 namespace JNet
 {
-	JCommon::ERROR_CODE Network::Init(const UINT16 port)
+	JCommon::ERROR_CODE Network::Init(const UINT32 maxClientCount, const UINT16 port)
 	{
 		SetMaxThreadCount();
 
@@ -27,7 +27,7 @@ namespace JNet
 			return errorCode;
 		}
 
-		CreateClient(MAX_CLIENT);
+		CreateClient(maxClientCount);
 
 		errorCode = BindandListen(port);
 		if (JCommon::ERROR_CODE::NONE != errorCode)
@@ -91,6 +91,8 @@ namespace JNet
 			mClientInfos.emplace_back(i);
 			mClientInfos[i].SetId(i);
 		}
+
+		mMaxClientCount = maxClientCount;
 	}
 
 	JCommon::ERROR_CODE Network::BindandListen(const UINT16 port)
@@ -290,7 +292,7 @@ namespace JNet
 
 	ClientInfo* Network::GetClientInfo(const UINT32 id)
 	{
-		return id >= MAX_CLIENT ? nullptr : &mClientInfos.at(id);
+		return id >= mMaxClientCount ? nullptr : &mClientInfos.at(id);
 	}
 
 	void Network::ProcRecvOperation(const stOverlappedEx& recvOverlappedEx)

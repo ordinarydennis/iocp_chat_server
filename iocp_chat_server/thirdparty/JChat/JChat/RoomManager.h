@@ -14,22 +14,21 @@ namespace JChat
 
 		~RoomManager() = default;
 
-		void Init(const UINT32 maxRoomCount);
+		void						Init(const UINT32 roomStartIndex, const UINT32 maxRoomUserCount);
 
-		bool IsExistRoom(const UINT32 roomNumber);
+		Room*						GetRoom(const UINT32 roomNumber);
 
-		Room* GetRoom(const UINT32 roomNumber);
-
-		bool EnterRoom(UINT32 roomNumber, ChatUser* chatUser);
+		JCommon::CLIENT_ERROR_CODE	EnterRoom(UINT32 roomNumber, ChatUser* chatUser);
 
 	private:
-		void CreateRooms(const UINT32 maxRoomCount);
+		void						CreateRooms();
 
 	private:
-		std::unordered_map<UINT32, Room>	mRoomDict;
-		UINT32								mRoomCount = 0;
+		static const UINT32			MAX_ROOM_COUNT = 5;
 
-		std::vector<Room>					mRooms;
-		UINT32								mMaxRoomCount = 0;
+	private:
+		std::vector<Room>			mRooms;
+		UINT32						mMaxRoomUserCount = 0;
+		UINT32						mRoomStartIndex = 0;
 	};
 }
