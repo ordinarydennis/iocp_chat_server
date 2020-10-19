@@ -57,39 +57,5 @@ namespace JCommon
 		ROOM_CHAT_NOTIFY = 223,
 	};
 
-	struct stPacketHeader
-	{
-		UINT16			mSize = 0;
-		UINT16			mPacket_id = 0;
-	};
-
-	const UINT16 PACKET_HEADER_SIZE = sizeof(stPacketHeader) + 1;
-
-	struct stPacket
-	{
-		UINT32			mClientFrom = 0;
-		UINT32			mClientTo = 0;
-		stPacketHeader	mHeader;
-		char			mBody[MAX_SOCKBUF] = { 0, };
-
-		stPacket()
-		{
-			ZeroMemory(&mBody, MAX_SOCKBUF);
-		};
-
-		stPacket(UINT32 ClientFrom, UINT32 ClientTo, stPacketHeader Header, const char* Body, size_t size)
-		{
-			mClientFrom = ClientFrom;
-			mClientTo = ClientTo;
-			mHeader = Header;
-			memcpy_s(mBody, size, Body, size);
-		}
-
-		size_t GetBodySize() const
-		{
-			return mHeader.mSize - PACKET_HEADER_SIZE;
-		}
-	};
-
 	UINT64 GetCurTimeSec();
 }

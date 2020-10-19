@@ -13,6 +13,40 @@ namespace JCommon
 
 #pragma pack(push, 1)
 
+	struct stPacketHeader
+	{
+		UINT16			mSize = 0;
+		UINT16			mPacket_id = 0;
+	};
+
+	const UINT16 PACKET_HEADER_SIZE = sizeof(stPacketHeader) + 1;
+
+	struct stPacket
+	{
+		UINT32			mClientFrom = 0;
+		UINT32			mClientTo = 0;		//TODO 제거하기
+		stPacketHeader	mHeader;
+		char			mBody[MAX_SOCKBUF] = { 0, };
+
+		stPacket()
+		{
+			ZeroMemory(&mBody, MAX_SOCKBUF);
+		};
+
+		stPacket(UINT32 ClientFrom, UINT32 ClientTo, stPacketHeader Header, const char* Body, size_t size)
+		{
+			mClientFrom = ClientFrom;
+			mClientTo = ClientTo;
+			mHeader = Header;
+			memcpy_s(mBody, size, Body, size);
+		}
+
+		size_t GetBodySize() const
+		{
+			return mHeader.mSize - PACKET_HEADER_SIZE;
+		}
+	};
+
 	struct LoginReqPacket
 	{
 		char mUserId[MAX_USER_ID_BYTE_LENGTH] = { 0, };

@@ -30,7 +30,9 @@ namespace JNet
 
 		std::function<void(JCommon::stPacket)> GetPacketSender();
 
-		std::optional<stOverlappedEx> GetClientRecvedPacket();
+		std::optional<ClientInfo*>	GetClientRecvedPacket();
+
+		void						PopClientRecvedPacket();
 
 	private:
 		void					SetMaxThreadCount();
@@ -57,9 +59,11 @@ namespace JNet
 
 		bool				PostRecv(ClientInfo* pClientInfo);
 
-		void				ProcRecvOperation(const stOverlappedEx& recvOverlappedEx);
+		//void				ProcRecvOperation(const stOverlappedEx& recvOverlappedEx);
 
-		void				AddToClientPoolRecvPacket(const stOverlappedEx& recvOverlappedEx);
+		void				ProcRecvOperation(ClientInfo* pClientInfo, const size_t size);
+
+		void				AddToClientPoolRecvPacket(ClientInfo* pClientInfo);
 
 		void				CloseSocket(ClientInfo* pClientInfo, const bool bIsForce = false);
 
@@ -95,7 +99,7 @@ namespace JNet
 
 		int			                mClientCnt = 0;
 		std::mutex                  mRecvPacketLock;
-		std::queue<stOverlappedEx>  mClientPoolRecvedPacket;
+		std::queue<ClientInfo*>		mClientPoolRecvedPacket;
 
 	};
 }

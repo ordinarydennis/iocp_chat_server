@@ -38,7 +38,7 @@ namespace JChat
 
 		void            Run();
 
-		void            ProcessPacket(const JNet::stOverlappedEx& recvOverlappedEx);
+		void            ProcessPacket(const JCommon::stPacket& packet);
 
 		void            ProcessRedisPacket(const JNet::RedisTask& task);
 

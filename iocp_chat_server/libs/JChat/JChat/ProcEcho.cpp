@@ -1,4 +1,5 @@
 #include "PacketProcessor.h"
+#include "Packet.h"
 
 namespace JChat
 {

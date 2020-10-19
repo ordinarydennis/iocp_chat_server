@@ -68,12 +68,18 @@ namespace JChat
 		while (mReceivePacketRun)
 		{
 			bool isPacket = false;
-
-			auto recvedPacketInfoOpt = mNetwork->GetClientRecvedPacket();
-			if (std::nullopt != recvedPacketInfoOpt)
+			auto clientRecvedPacketOpt = mNetwork->GetClientRecvedPacket();
+			if (std::nullopt != clientRecvedPacketOpt)
 			{
 				isPacket = true;
-				ProcessPacket(recvedPacketInfoOpt.value());
+
+				auto clientRecvedPacket = clientRecvedPacketOpt.value();
+				auto packetOpt = clientRecvedPacket->GetPacket();
+				if (std::nullopt != packetOpt)
+				{
+					ProcessPacket(packetOpt.value());
+					mNetwork->PopClientRecvedPacket();
+				}
 			}
 
 			auto taskOpt = mRedis->GetResponseTask();
@@ -90,23 +96,10 @@ namespace JChat
 		}
 	}
 
-	void PacketProcessor::ProcessPacket(const JNet::stOverlappedEx& recvOverlappedEx)
+	void PacketProcessor::ProcessPacket(const JCommon::stPacket& packet)
 	{
-		const char* recvBuf = recvOverlappedEx.m_wsaBuf.buf;
-		const size_t recvBufSize = recvOverlappedEx.m_wsaBuf.len;
-		UINT32 clientId = recvOverlappedEx.m_clientId;
-
-		JCommon::stPacketHeader header;
-		memcpy_s(&header.mSize, sizeof(UINT16), recvBuf, sizeof(UINT16));
-		memcpy_s(&header.mPacket_id, sizeof(UINT16), &recvBuf[2], sizeof(UINT16));
-
-		char body[JCommon::MAX_SOCKBUF] = { 0, };
-		UINT32 bodySize = (UINT32)recvBufSize - JCommon::PACKET_HEADER_SIZE;
-		memcpy_s(body, bodySize, &recvBuf[JCommon::PACKET_HEADER_SIZE], bodySize);
-
-		JCommon::stPacket packet(clientId, 0, header, body, bodySize);
-
 		JCommon::PACKET_ID packetId = static_cast<JCommon::PACKET_ID>(packet.mHeader.mPacket_id);
+		
 		auto iter = mRecvPacketProcDict.find(packetId);
 		if (iter != mRecvPacketProcDict.end())
 		{

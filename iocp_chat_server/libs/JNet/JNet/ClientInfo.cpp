@@ -11,20 +11,30 @@ namespace JNet
 {
 	using namespace std::chrono;
 
+	ClientInfo::ClientInfo()
+	{
+		Init();
+	}
+
 	ClientInfo::ClientInfo(const ClientInfo& clientInfo)
 		:mId(clientInfo.mId)
 	{
-		ZeroMemory(&mAcceptOverlappedEx, sizeof(stOverlappedEx));
-		ZeroMemory(&mRecvOverlappedEx, sizeof(stOverlappedEx));
-		ZeroMemory(&mSendOverlappedEx, sizeof(stOverlappedEx));
+		Init();
 	}
 
 	ClientInfo::ClientInfo(const UINT32 id)
 		:mId(id)
 	{
+		Init();
+	}
+
+	void ClientInfo::Init()
+	{
 		ZeroMemory(&mAcceptOverlappedEx, sizeof(stOverlappedEx));
 		ZeroMemory(&mRecvOverlappedEx, sizeof(stOverlappedEx));
 		ZeroMemory(&mSendOverlappedEx, sizeof(stOverlappedEx));
+
+		mRecvBuffer = new char[PACKET_DATA_BUFFER_SIZE];
 	}
 
 	void ClientInfo::SetId(const UINT32 id)
@@ -137,6 +147,58 @@ namespace JNet
 		}
 
 		PostAccept(listenSocket);
+	}
+
+	void ClientInfo::SetRecvPacketBuff(const char* pData, const size_t dataSize)
+	{
+		if ((mRecvPacketWPos + dataSize) >= PACKET_DATA_BUFFER_SIZE)
+		{
+			auto remainDataSize = mRecvPacketWPos - mRecvPacketRPos;
+
+			if (remainDataSize > 0)
+			{
+				CopyMemory(&mRecvBuffer[0], &mRecvBuffer[mRecvPacketRPos], remainDataSize);
+				mRecvPacketWPos = remainDataSize;
+			}
+			else
+			{
+				mRecvPacketWPos = 0;
+			}
+
+			mRecvPacketRPos = 0;
+		}
+
+		memcpy_s(&mRecvBuffer[mRecvPacketWPos], dataSize, pData, dataSize);
+		mRecvPacketWPos += static_cast<UINT32>(dataSize);
+	}
+
+	std::optional<JCommon::stPacket> ClientInfo::GetPacket()
+	{
+		//TODO mRecvPacketWPos, mRecvPacketRPos Lock 필요 할 듯?
+		UINT32 remainByte = mRecvPacketWPos - mRecvPacketRPos;
+
+		if (remainByte < JCommon::PACKET_HEADER_SIZE)
+		{
+			return std::nullopt;
+		}
+
+		auto pHeader = (JCommon::stPacketHeader*)&mRecvBuffer[mRecvPacketRPos];
+
+		if (pHeader->mSize > remainByte)
+		{
+			return std::nullopt;
+		}
+
+		JCommon::stPacket packet;
+		packet.mHeader.mPacket_id = pHeader->mPacket_id;
+		packet.mHeader.mSize = pHeader->mSize;
+		packet.mClientFrom = mId;
+		//TODO 불필요한 복사 개선하기
+		memcpy_s(packet.mBody, pHeader->mSize, &mRecvBuffer[JCommon::PACKET_HEADER_SIZE + mRecvPacketRPos], pHeader->mSize);
+
+		mRecvPacketRPos += pHeader->mSize;
+
+		return packet;
 	}
 
 	bool ClientInfo::IsConnecting()

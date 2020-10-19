@@ -194,10 +194,7 @@ namespace JNet
 					continue;
 				}
 
-				stOverlappedEx recvOverlappedEx = *pOverlappedEx;
-				recvOverlappedEx.m_wsaBuf.len = dwIoSize;
-				ProcRecvOperation(recvOverlappedEx);
-				PostRecv(pClientInfo);
+				ProcRecvOperation(pClientInfo, dwIoSize);
 			}
 			else if (IOOperation::SEND == pOverlappedEx->m_eOperation)
 			{
@@ -295,15 +292,25 @@ namespace JNet
 		return id >= mMaxClientCount ? nullptr : &mClientInfos.at(id);
 	}
 
-	void Network::ProcRecvOperation(const stOverlappedEx& recvOverlappedEx)
+	//void Network::ProcRecvOperation(const stOverlappedEx& recvOverlappedEx)
+	//{
+	//	pClientInfo->SetRecvPacketBuff(dwIoSize, pClientInfo->GetRecvBuf());
+	//	AddToClientPoolRecvPacket(recvOverlappedEx);
+	//}
+
+	void Network::ProcRecvOperation(ClientInfo* pClientInfo, const size_t size)
 	{
-		AddToClientPoolRecvPacket(recvOverlappedEx);
+		pClientInfo->SetRecvPacketBuff(pClientInfo->GetRecvBuf(), size);
+		
+		AddToClientPoolRecvPacket(pClientInfo);
+
+		PostRecv(pClientInfo);
 	}
 
-	void Network::AddToClientPoolRecvPacket(const stOverlappedEx& recvOverlappedEx)
+	void Network::AddToClientPoolRecvPacket(ClientInfo* pClientInfo)
 	{
 		std::lock_guard<std::mutex> guard(mRecvPacketLock);
-		mClientPoolRecvedPacket.push(recvOverlappedEx);
+		mClientPoolRecvedPacket.push(pClientInfo);
 	}
 
 	//CompletionPort按眉客 家南苞 CompletionKey甫
@@ -402,7 +409,7 @@ namespace JNet
 		return std::bind(&Network::SendPacket, this, std::placeholders::_1);
 	}
 
-	std::optional<stOverlappedEx> Network::GetClientRecvedPacket()
+	std::optional<ClientInfo*> Network::GetClientRecvedPacket()
 	{
 		std::lock_guard<std::mutex> guard(mRecvPacketLock);
 		if (mClientPoolRecvedPacket.empty())
@@ -410,9 +417,17 @@ namespace JNet
 			return std::nullopt;
 		}
 
-		stOverlappedEx front = mClientPoolRecvedPacket.front();
-		mClientPoolRecvedPacket.pop();
+		ClientInfo* front = mClientPoolRecvedPacket.front();
 		return front;
+	}
+
+	void Network::PopClientRecvedPacket()
+	{
+		std::lock_guard<std::mutex> guard(mRecvPacketLock);
+		if (false == mClientPoolRecvedPacket.empty())
+		{
+			mClientPoolRecvedPacket.pop();
+		}
 	}
 
 	void Network::SendPacket(const JCommon::stPacket& packet)

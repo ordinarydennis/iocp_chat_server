@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Packet.h"
 #include "Define.h"
 #include <mutex>
 #include <optional>
@@ -11,7 +12,7 @@ namespace JNet
 	class ClientInfo
 	{
 	public:
-		ClientInfo() = default;
+		ClientInfo();
 
 		ClientInfo(const ClientInfo& clientInfo);
 
@@ -47,14 +48,20 @@ namespace JNet
 
 		void					AsyncAccept(SOCKET listenSocket);
 
+		void					SetRecvPacketBuff(const char* pData, const size_t dataSize);
+
+		std::optional<JCommon::stPacket>	GetPacket();
+
 	private:
-		void			SetLatestClosedTimeSec(const UINT64 latestClosedTimeSec);
+		void					Init();
 
-		bool			PostAccept(const SOCKET listenSocket);
+		void					SetLatestClosedTimeSec(const UINT64 latestClosedTimeSec);
 
-		bool			IsConnecting();
+		bool					PostAccept(const SOCKET listenSocket);
 
-		UINT64			GetLatestClosedTimeSec() const;
+		bool					IsConnecting();
+
+		UINT64					GetLatestClosedTimeSec() const;
 
 	private:
 		INT32						mId = 0;
@@ -82,7 +89,10 @@ namespace JNet
 
 		bool						mIsConnecting = false;
 		std::mutex                  mIsConnectingLock;
-
+		//TODO 변수명 명확하게 수정
+		char*						mRecvBuffer = nullptr;
+		UINT32						mRecvPacketWPos = 0;
+		UINT32						mRecvPacketRPos = 0;
 	};
 }
 
