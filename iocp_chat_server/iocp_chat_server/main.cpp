@@ -1,9 +1,7 @@
-//#include "ChatServer.h"
-
 #pragma comment(lib,"JChat.lib")
 
 #include "Service.h"
-#include "../thirdparty/JChat/JChat/Define.h"
+#include "Define.h"
 #include "CrushDump.h"
 
 int main(int argc, char* argv[])

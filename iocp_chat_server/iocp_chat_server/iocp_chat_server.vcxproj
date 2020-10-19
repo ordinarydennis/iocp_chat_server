@@ -80,8 +80,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>..\thirdparty\JCommont\JCommon;..\thirdparty\JChat\JChat;..\thirdparty\breakpad;..\thirdparty\hiredis;$(IncludePath)</IncludePath>
-    <LibraryPath>..\thirdparty\JChat\x64\Debug;..\thirdparty\breakpad\client\windows\Debug\lib;..\thirdparty\hiredis\VS-IDE\Debug;$(LibraryPath)</LibraryPath>
+    <IncludePath>..\libs\JChat\JChat;..\libs\JCommon\JCommon;..\thirdparty\breakpad;$(IncludePath)</IncludePath>
+    <LibraryPath>..\thirdparty\hiredis\VS-IDE\Debug;..\libs\JChat\x64\Debug;..\thirdparty\breakpad\client\windows\Debug\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
@@ -123,6 +123,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

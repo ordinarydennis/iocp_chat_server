@@ -1,6 +1,6 @@
 #include "PacketProcessor.h"
 #include "ChatUserManager.h"
-#include "../../JNet/JNet/RedisPacket.h"
+#include "RedisPacket.h"
 
 namespace JChat
 {

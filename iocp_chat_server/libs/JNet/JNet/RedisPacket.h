@@ -1,7 +1,7 @@
 #pragma once
 
 #include "RedisDefine.h"
-#include "../../JCommon/JCommon/Packet.h"
+#include "Packet.h"
 
 namespace JNet
 {

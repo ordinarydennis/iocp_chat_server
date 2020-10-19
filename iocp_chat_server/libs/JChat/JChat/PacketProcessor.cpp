@@ -2,9 +2,9 @@
 #include "ChatUserManager.h"
 #include "RoomManager.h"
 #include "Define.h"
-#include "../../JNet/JNet/Network.h"
-#include "../../JNet/JNet/Redis.h"
-#include "../../JNet/JNet/RedisConfig.h"
+#include "Network.h"
+#include "Redis.h"
+#include "RedisConfig.h"
 
 namespace JChat
 {

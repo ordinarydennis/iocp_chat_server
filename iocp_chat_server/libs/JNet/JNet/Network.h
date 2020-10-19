@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../JCommon/JCommon/Common.h"
+#include "Common.h"
 #include "Define.h"
 #include "ClientInfo.h"
 #include <thread>

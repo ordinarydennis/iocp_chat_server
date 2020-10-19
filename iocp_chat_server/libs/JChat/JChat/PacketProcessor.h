@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../JCommon/JCommon/Common.h"
+#include "Common.h"
 #include <basetsd.h>
 #include <functional>
 #include <thread>

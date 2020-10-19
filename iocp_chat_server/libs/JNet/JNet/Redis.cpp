@@ -1,6 +1,6 @@
 #include "Redis.h"
 #include "RedisPacket.h"
-#include "../../CRedisConn.h"
+#include "CRedisConn.h"
 
 namespace JNet
 {

@@ -1,5 +1,5 @@
 #include "Room.h"
-#include "../../JNet/JNet/Network.h"
+#include "Network.h"
 #include "Chatuser.h"
 
 namespace JChat

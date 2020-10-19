@@ -3,7 +3,6 @@
 
 namespace JChat
 {
-	
 	std::optional<ServiceArgs> DecodeServiceArgs(int argc, char* argv[])
 	{
 		const flags::args args(argc, argv);
@@ -48,5 +47,4 @@ namespace JChat
 
 		return serviceArgs;
 	}
-	
 }

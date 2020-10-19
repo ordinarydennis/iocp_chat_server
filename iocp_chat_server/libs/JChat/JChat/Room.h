@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../JCommon/JCommon/Packet.h"
+#include "Packet.h"
 #include <basetsd.h>
 #include <list>
 #include <functional>

@@ -1,6 +1,6 @@
 #include "PacketProcessor.h"
-#include "../../JNet/JNet/RedisPacket.h"
-#include "../../JNet/JNet/Redis.h"
+#include "RedisPacket.h"
+#include "Redis.h"
 
 namespace JChat
 {

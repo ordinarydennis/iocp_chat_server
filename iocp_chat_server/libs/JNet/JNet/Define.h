@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../JCommon/JCommon/Common.h"
+#include "Common.h"
 
 namespace JNet
 {
