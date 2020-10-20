@@ -3,9 +3,12 @@
 #include "Service.h"
 #include "Define.h"
 #include "CrushDump.h"
+#include "Logger.h"
 
 int main(int argc, char* argv[])
 {
+	JCommon::Logger::Info("Start Server");
+
 	InitCrashDump(1);
 
 	auto serviceArgsOpt = JChat::DecodeServiceArgs(argc, argv);
@@ -20,12 +23,14 @@ int main(int argc, char* argv[])
 	errorCode = service.Init(serviceArgsOpt.value());
 	if (JCommon::ERROR_CODE::NONE != errorCode)
 	{
-		printf("[ERROR] Error Number: %d, Get Last Error: %d\n", errorCode, WSAGetLastError());
+		JCommon::Logger::Error("Error Number: %d, Get Last Error: %d", errorCode, WSAGetLastError());
 		return static_cast<int>(errorCode);
 	}
 
 	service.Run();
 	service.Destroy();
+
+	JCommon::Logger::Info("Detroy Server");
 
 	return static_cast<int>(JCommon::ERROR_CODE::NONE);
 }

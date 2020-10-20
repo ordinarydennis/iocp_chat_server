@@ -80,7 +80,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>..\libs\JChat\JChat;..\libs\JCommon\JCommon;..\thirdparty\breakpad;$(IncludePath)</IncludePath>
+    <IncludePath>..\libs\JChat\JChat;..\libs\JCommon\JCommon;..\thirdparty\spdlog\include;..\thirdparty\breakpad;$(IncludePath)</IncludePath>
     <LibraryPath>..\thirdparty\hiredis\VS-IDE\Debug;..\libs\JChat\x64\Debug;..\thirdparty\breakpad\client\windows\Debug\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

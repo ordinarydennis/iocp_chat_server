@@ -24,12 +24,18 @@
     <ClCompile Include="Common.cpp">
       <Filter>Source Files\private</Filter>
     </ClCompile>
+    <ClCompile Include="Logger.cpp">
+      <Filter>Source Files\private</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Common.h">
       <Filter>Source Files\public</Filter>
     </ClInclude>
     <ClInclude Include="Packet.h">
+      <Filter>Source Files\public</Filter>
+    </ClInclude>
+    <ClInclude Include="Logger.h">
       <Filter>Source Files\public</Filter>
     </ClInclude>
   </ItemGroup>
