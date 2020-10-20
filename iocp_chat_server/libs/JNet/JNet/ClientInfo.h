@@ -59,8 +59,6 @@ namespace JNet
 
 		bool					PostAccept(const SOCKET listenSocket);
 
-		bool					IsConnecting();
-
 		UINT64					GetLatestClosedTimeSec() const;
 
 	private:
@@ -84,11 +82,8 @@ namespace JNet
 
 		UINT64						mLatestClosedTimeSec = 0;
 
-		bool						m_bSending = false;
-		std::mutex                  mSendingLock;
+		LONG volatile				mIsSending = 0;
 
-		bool						mIsConnecting = false;
-		std::mutex                  mIsConnectingLock;
 		//TODO 변수명 명확하게 수정
 		char*						mRecvBuffer = nullptr;
 		UINT32						mRecvPacketWPos = 0;

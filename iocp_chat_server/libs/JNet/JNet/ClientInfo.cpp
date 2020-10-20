@@ -91,8 +91,8 @@ namespace JNet
 
 	bool ClientInfo::IsSending()
 	{
-		std::lock_guard<std::mutex> guard(mSendingLock);
-		return m_bSending;
+		//TODO 읽을 땐 lock 없어도 되는건가?
+		return mIsSending;
 	}
 
 	std::optional<JCommon::stPacket> ClientInfo::GetSendPacket()
@@ -117,8 +117,7 @@ namespace JNet
 
 	void ClientInfo::SetSending(const bool bSending)
 	{
-		std::lock_guard<std::mutex> guard(mSendingLock);
-		m_bSending = bSending;
+		InterlockedExchange(&mIsSending, bSending);
 	}
 
 	void ClientInfo::AddSendPacket(const JCommon::stPacket& packet)
@@ -129,11 +128,6 @@ namespace JNet
 
 	void ClientInfo::AsyncAccept(SOCKET listenSocket)
 	{
-		if (IsConnecting())
-		{
-			return;
-		}
-
 		UINT64 curTimeSec = JCommon::GetCurTimeSec();
 		if (curTimeSec < GetLatestClosedTimeSec())
 		{
@@ -199,12 +193,6 @@ namespace JNet
 		mRecvPacketRPos += pHeader->mSize;
 
 		return packet;
-	}
-
-	bool ClientInfo::IsConnecting()
-	{
-		std::lock_guard<std::mutex> guard(mIsConnectingLock);
-		return mIsConnecting;
 	}
 
 	UINT64 ClientInfo::GetLatestClosedTimeSec() const 

@@ -292,12 +292,6 @@ namespace JNet
 		return id >= mMaxClientCount ? nullptr : &mClientInfos.at(id);
 	}
 
-	//void Network::ProcRecvOperation(const stOverlappedEx& recvOverlappedEx)
-	//{
-	//	pClientInfo->SetRecvPacketBuff(dwIoSize, pClientInfo->GetRecvBuf());
-	//	AddToClientPoolRecvPacket(recvOverlappedEx);
-	//}
-
 	void Network::ProcRecvOperation(ClientInfo* pClientInfo, const size_t size)
 	{
 		pClientInfo->SetRecvPacketBuff(pClientInfo->GetRecvBuf(), size);

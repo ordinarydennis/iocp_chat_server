@@ -71,12 +71,12 @@ namespace JChat
 		RoomManager*			mRoomManager = nullptr;
 
 		using receiver = void(PacketProcessor::*)(const JCommon::stPacket& p);
-		std::unordered_map<JCommon::PACKET_ID, receiver>  mRecvPacketProcDict;
+		std::unordered_map<JCommon::PACKET_ID, receiver>		mRecvPacketProcDict;
 
 		using RedisReceiver = void(PacketProcessor::*)(const JNet::RedisTask& task);
 		std::unordered_map<JNet::REDIS_TASK_ID, RedisReceiver>  mRecvRedisPacketProcDict;
 
-		std::function<void(JCommon::stPacket)>           mPacketSender;
+		std::function<void(JCommon::stPacket)>					mPacketSender;
 
 		std::thread	                            mReceivePacketThread;
 		bool                                    mReceivePacketRun = true;
