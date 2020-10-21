@@ -1,6 +1,7 @@
 #include "PacketProcessor.h"
 #include "RedisPacket.h"
 #include "Redis.h"
+#include "Logger.h"
 
 namespace JChat
 {
@@ -11,7 +12,7 @@ namespace JChat
 		loginReqPacket->mUserId;
 		loginReqPacket->mUserPw;
 
-		printf("Login User Id : %s passwd : %s \n", loginReqPacket->mUserId, loginReqPacket->mUserPw);
+		JCommon::Logger::Info("Login User Id : %s passwd : %s ", loginReqPacket->mUserId, loginReqPacket->mUserPw);
 
 		JNet::LoginReqRedisPacket redisReqPacket;
 		redisReqPacket.mClientId = packet.mClientFrom;

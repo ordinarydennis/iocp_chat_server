@@ -1,6 +1,7 @@
 #include "PacketProcessor.h"
 #include "ChatUserManager.h"
 #include "RoomManager.h"
+#include "Logger.h"
 
 namespace JChat
 {
@@ -9,13 +10,31 @@ namespace JChat
 		ChatUser* chatUser = mChatUserManager->GetUser(packet.mClientFrom);
 		if (nullptr == chatUser)
 		{
-			//TODO 로그
+			JCommon::Logger::Error("User Index %d is invalid", packet.mClientFrom);
+			JCommon::ResultResPacket resultResPacket;
+			resultResPacket.mResult = JCommon::CLIENT_ERROR_CODE::INVALID_USER;
+			SendPacket(
+				packet.mClientFrom,
+				packet.mClientFrom,
+				static_cast<UINT16>(JCommon::PACKET_ID::ROOM_LEAVE_RES),
+				reinterpret_cast<char*>(&resultResPacket),
+				sizeof(resultResPacket)
+			);
 			return;
 		}
 		Room* room = mRoomManager->GetRoom(chatUser->GetRoomNumber());
 		if (nullptr == room)
 		{
-			//TODO 로그 
+			JCommon::Logger::Error("RoomNumber %d is invalid.", chatUser->GetRoomNumber());
+			JCommon::ResultResPacket resultResPacket;
+			resultResPacket.mResult = JCommon::CLIENT_ERROR_CODE::INVALID_ROOM_NUMBER;
+			SendPacket(
+				packet.mClientFrom,
+				packet.mClientFrom,
+				static_cast<UINT16>(JCommon::PACKET_ID::ROOM_LEAVE_RES),
+				reinterpret_cast<char*>(&resultResPacket),
+				sizeof(resultResPacket)
+			);
 			return;
 		}
 

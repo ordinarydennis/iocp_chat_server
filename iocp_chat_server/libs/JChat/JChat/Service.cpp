@@ -1,6 +1,7 @@
 #include "Service.h"
 #include "PacketProcessor.h"
 #include "Define.h"
+#include "Logger.h"
 #include <iostream>
 #include <sstream>
 
@@ -37,7 +38,7 @@ namespace JChat
 
 	void Service::Waiting()
 	{
-		printf("아무 키나 누를 때까지 대기합니다\n");
+		JCommon::Logger::Info("아무 키나 누를 때까지 대기합니다");
 		while (true)
 		{
 			std::string inputCmd;

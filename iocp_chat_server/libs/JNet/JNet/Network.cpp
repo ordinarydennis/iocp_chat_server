@@ -1,4 +1,5 @@
 #include "Network.h"
+#include "Logger.h"
 #include <optional>
 
 namespace JNet
@@ -56,7 +57,7 @@ namespace JNet
 		int nRet = WSAStartup(MAKEWORD(2, 2), &wsaData);
 		if (0 != nRet)
 		{
-			printf("[ERROR] WSAStartup()함수 실패 : %d\n", WSAGetLastError());
+			JCommon::Logger::Error("WSAStartup()함수 실패 : %d", WSAGetLastError());
 			return JCommon::ERROR_CODE::WSASTARTUP;
 		}
 		return JCommon::ERROR_CODE::NONE;
@@ -67,7 +68,7 @@ namespace JNet
 		mListenSocket = WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, NULL, WSA_FLAG_OVERLAPPED);
 		if (INVALID_SOCKET == mListenSocket)
 		{
-			printf("[ERROR] socket()함수 실패 : %d\n", WSAGetLastError());
+			JCommon::Logger::Error("socket()함수 실패 : %d", WSAGetLastError());
 			return JCommon::ERROR_CODE::SOCKET_CREATE_LISTEN;
 		}
 		return JCommon::ERROR_CODE::NONE;
@@ -78,7 +79,7 @@ namespace JNet
 		mIOCPHandle = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, NULL, mMaxThreadCount);
 		if (NULL == mIOCPHandle)
 		{
-			printf("[ERROR] CreateIoCompletionPort()함수 실패: %d\n", GetLastError());
+			JCommon::Logger::Error("CreateIoCompletionPort()함수 실패: %d", GetLastError());
 			return JCommon::ERROR_CODE::IOCP_CREATE;
 		}
 		return JCommon::ERROR_CODE::NONE;
@@ -105,14 +106,14 @@ namespace JNet
 		int nRet = bind(mListenSocket, (SOCKADDR*)&stServerAddr, sizeof(SOCKADDR_IN));
 		if (0 != nRet)
 		{
-			printf("[ERROR] bind()함수 실패 : %d\n", WSAGetLastError());
+			JCommon::Logger::Error("bind()함수 실패 : %d", WSAGetLastError());
 			return JCommon::ERROR_CODE::SOCKET_BIND;
 		}
 
 		nRet = listen(mListenSocket, 5);
 		if (0 != nRet)
 		{
-			printf("[ERROR] listen()함수 실패 : %d\n", WSAGetLastError());
+			JCommon::Logger::Error("listen()함수 실패 : %d", WSAGetLastError());
 			return JCommon::ERROR_CODE::SOCKET_LISTEN;
 		}
 
@@ -124,7 +125,7 @@ namespace JNet
 		HANDLE handle = CreateIoCompletionPort((HANDLE)mListenSocket, mIOCPHandle, NULL, NULL);
 		if (handle != mIOCPHandle)
 		{
-			printf("[ERROR] mListenSocket CreateIoCompletionPort 등록 실패: %d\n", GetLastError());
+			JCommon::Logger::Error("ListenSocket CreateIoCompletionPort 등록 실패: %d", GetLastError());
 			return JCommon::ERROR_CODE::SOCKET_REGISTER_IOCP;
 		}
 
@@ -144,7 +145,7 @@ namespace JNet
 		{
 			mIOWorkerThreads.emplace_back([this]() { WokerThread(); });
 		}
-		printf("WokerThread 시작..\n");
+		JCommon::Logger::Info("WokerThread 시작..");
 	}
 
 	void Network::WokerThread()
@@ -189,7 +190,7 @@ namespace JNet
 				//check close client..			
 				if (FALSE == bSuccess || (0 == dwIoSize && TRUE == bSuccess))
 				{
-					printf("socket(%d) 접속 끊김\n", (int)pClientInfo->GetClientSocket());
+					JCommon::Logger::Info("socket(%d) 접속 끊김", (int)pClientInfo->GetClientSocket());
 					CloseSocket(pClientInfo);
 					continue;
 				}
@@ -204,14 +205,14 @@ namespace JNet
 				}
 				else
 				{
-					printf("[ERROR] 유저 %d 송신 실패.. 재전송 시도..\n", pClientInfo->GetId());
+					JCommon::Logger::Error("유저 % d 송신 실패..재전송 시도..", pClientInfo->GetId());
 				}
 
 				pClientInfo->SetSending(false);
 			}
 			else
 			{
-				printf("socket(%d)에서 예외상황\n", (int)pClientInfo->GetClientSocket());
+				JCommon::Logger::Error("socket(%d)에서 예외상황", (int)pClientInfo->GetClientSocket());
 			}
 		}
 	}
@@ -219,7 +220,7 @@ namespace JNet
 	void Network::SetAccepterThread()
 	{
 		mAccepterThread = std::thread([this]() { AccepterThread(); });
-		printf("AccepterThread 시작..\n");
+		JCommon::Logger::Info("AccepterThread 시작..", GetLastError());
 	}
 
 	void Network::AccepterThread()
@@ -280,7 +281,7 @@ namespace JNet
 		//socket_error이면 client socket이 끊어진걸로 처리한다.
 		if (nRet == SOCKET_ERROR && (WSAGetLastError() != ERROR_IO_PENDING))
 		{
-			printf("[에러] WSARecv()함수 실패 : %d\n", WSAGetLastError());
+			JCommon::Logger::Error("WSARecv()함수 실패 : %d", WSAGetLastError());
 			return false;
 		}
 
@@ -318,7 +319,7 @@ namespace JNet
 
 		if (NULL == hIOCP || mIOCPHandle != hIOCP)
 		{
-			printf("[에러] CreateIoCompletionPort()함수 실패: %d\n", GetLastError());
+			JCommon::Logger::Error("CreateIoCompletionPort()함수 실패: %d", GetLastError());
 			return false;
 		}
 
@@ -460,7 +461,7 @@ namespace JNet
 		//socket_error이면 client socket이 끊어진걸로 처리한다.
 		if (nRet == SOCKET_ERROR && (WSAGetLastError() != ERROR_IO_PENDING))
 		{
-			printf("[에러] WSASend()함수 실패 : %d\n", WSAGetLastError());
+			JCommon::Logger::Error("WSASend()함수 실패 : %d", WSAGetLastError());
 			return false;
 		}
 		return true;

@@ -1,6 +1,7 @@
 #include "PacketProcessor.h"
 #include "ChatUserManager.h"
 #include "RoomManager.h"
+#include "Logger.h"
 
 namespace JChat
 {
@@ -9,7 +10,16 @@ namespace JChat
 		ChatUser* chatUser = mChatUserManager->GetUser(packet.mClientFrom);
 		if (nullptr == chatUser)
 		{
-			//TODO 로그
+			JCommon::Logger::Error("User Index %d is invalid", packet.mClientFrom);
+			JCommon::ResultResPacket resultResPacket;
+			resultResPacket.mResult = JCommon::CLIENT_ERROR_CODE::INVALID_USER;
+			SendPacket(
+				packet.mClientFrom,
+				packet.mClientFrom,
+				static_cast<UINT16>(JCommon::PACKET_ID::ROOM_ENTER_RES),
+				reinterpret_cast<char*>(&resultResPacket),
+				sizeof(resultResPacket)
+			);
 			return;
 		}
 
@@ -21,12 +31,30 @@ namespace JChat
 
 		if (JCommon::CLIENT_ERROR_CODE::INVALID_ROOM_NUMBER == roomError)
 		{
-			//TODO 로그 및 응답 메세지
+			JCommon::Logger::Error("RoomNumber %d is invalid.", roomNumber);
+			JCommon::ResultResPacket resultResPacket;
+			resultResPacket.mResult = JCommon::CLIENT_ERROR_CODE::INVALID_ROOM_NUMBER;
+			SendPacket(
+				packet.mClientFrom,
+				packet.mClientFrom,
+				static_cast<UINT16>(JCommon::PACKET_ID::ROOM_ENTER_RES),
+				reinterpret_cast<char*>(&resultResPacket),
+				sizeof(resultResPacket)
+			);
 			return;
 		}
 		else if (JCommon::CLIENT_ERROR_CODE::FULL_ROOM_USER == roomError)
 		{
-			//TODO 로그 및 응답 메세지
+			JCommon::Logger::Error("Room is full.");
+			JCommon::ResultResPacket resultResPacket;
+			resultResPacket.mResult = JCommon::CLIENT_ERROR_CODE::FULL_ROOM_USER;
+			SendPacket(
+				packet.mClientFrom,
+				packet.mClientFrom,
+				static_cast<UINT16>(JCommon::PACKET_ID::ROOM_ENTER_RES),
+				reinterpret_cast<char*>(&resultResPacket),
+				sizeof(resultResPacket)
+			);
 			return;
 		}
 

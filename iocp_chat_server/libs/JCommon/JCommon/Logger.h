@@ -11,8 +11,6 @@ namespace JCommon
 
 		~Logger() = default;
 
-		static void		Init();
-
 		static void		Info(const char* fmt, ...);
 
 		static void		Error(const char* fmt, ...);

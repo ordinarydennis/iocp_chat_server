@@ -1,5 +1,6 @@
 #include "ClientInfo.h"
 #include "Common.h"
+#include "Logger.h"
 #include <Windows.h>
 #include <chrono>
 #include <mswsock.h>
@@ -208,7 +209,7 @@ namespace JNet
 
 		if (INVALID_SOCKET == mClientSocket)
 		{
-			printf_s("client Socket WSASocket Error : %d\n", GetLastError());
+			JCommon::Logger::Error("Client Socket WSASocket Error : %d", GetLastError());
 			return false;
 		}
 
@@ -228,7 +229,7 @@ namespace JNet
 		{
 			if (WSAGetLastError() != WSA_IO_PENDING)
 			{
-				printf_s("AcceptEx Error : %d\n", GetLastError());
+				JCommon::Logger::Error("AcceptEx Error : %d", GetLastError());
 				return false;
 			}
 		}

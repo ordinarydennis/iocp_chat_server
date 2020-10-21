@@ -34,6 +34,7 @@ namespace JCommon
 		LOGIN_USER_INVALID_PW = 33,
 		INVALID_ROOM_NUMBER,
 		FULL_ROOM_USER,
+		INVALID_USER,
 	};
 
 	enum class PACKET_ID : UINT16
