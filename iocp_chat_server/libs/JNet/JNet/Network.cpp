@@ -42,6 +42,12 @@ namespace JNet
 			return errorCode;
 		}
 
+		errorCode = InitRecvPacketSListHead();
+		if (JCommon::ERROR_CODE::NONE != errorCode)
+		{
+			return errorCode;
+		}
+
 		return JCommon::ERROR_CODE::NONE;
 	}
 
@@ -130,6 +136,20 @@ namespace JNet
 		}
 
 		return JCommon::ERROR_CODE::NONE;
+	}
+
+	JCommon::ERROR_CODE Network::InitRecvPacketSListHead()
+	{
+		mRecvPacketSListHead = (PSLIST_HEADER)_aligned_malloc(sizeof(SLIST_HEADER), MEMORY_ALLOCATION_ALIGNMENT);
+
+		if (NULL == mRecvPacketSListHead)
+		{
+			JCommon::Logger::Error("mRecvPacketSListHead Memeory Allocate Fail _aligned_malloc");
+			return JCommon::ERROR_CODE::INIT_RECV_PACKET_SLIST;;
+		}
+
+		InitializeSListHead(mRecvPacketSListHead);
+		return JCommon::ERROR_CODE::NONE;;
 	}
 
 	void Network::Run()
@@ -296,11 +316,11 @@ namespace JNet
 
 	void Network::ProcRecvOperation(ClientInfo* pClientInfo, const size_t size)
 	{
-		auto packet = pClientInfo->RecvPacket(pClientInfo->GetRecvBuf(), size);
+		auto completedPacket = pClientInfo->RecvPacket(pClientInfo->GetRecvBuf(), size);
 
-		if (packet.has_value())
+		if (completedPacket.has_value())
 		{
-			PushRecvedPacket(packet.value());
+			PushRecvedPacket(completedPacket.value());
 		}
 
 		PostRecv(pClientInfo);
@@ -308,22 +328,32 @@ namespace JNet
 
 	void Network::PushRecvedPacket(const JCommon::stPacket& packet)
 	{
-		//TODO interlocked list 로 수정하기
-		std::lock_guard<std::mutex> guard(mRecvPacketPoolLock);
-		mRecvPacketPool.push(packet);
+		JCommon::EntryPacket* pEntryPacket = (JCommon::EntryPacket*)_aligned_malloc(sizeof(JCommon::EntryPacket), MEMORY_ALLOCATION_ALIGNMENT);
+		if (NULL == pEntryPacket)
+		{
+			//cout << "pTestData Memeory Allocate Fail _aligned_malloc" << endl;
+			return ;
+		}
+
+		pEntryPacket->mPacket = packet;
+
+		InterlockedPushEntrySList(mRecvPacketSListHead, &(pEntryPacket->mEntry));
 	}
 
 	std::optional<JCommon::stPacket> Network::GetRecvedPacket()
 	{
-		//TODO interlocked list 로 수정하기
-		std::lock_guard<std::mutex> guard(mRecvPacketPoolLock);
-		if (mRecvPacketPool.empty())
+		PSLIST_ENTRY pListEntry = InterlockedPopEntrySList(mRecvPacketSListHead);
+		if (NULL == pListEntry)
 		{
 			return std::nullopt;
 		}
 
-		auto packet = mRecvPacketPool.front();
-		mRecvPacketPool.pop();
+		JCommon::EntryPacket* pEntryPacket = reinterpret_cast<JCommon::EntryPacket*>(pListEntry);
+
+		JCommon::stPacket packet = pEntryPacket->mPacket;
+
+		_aligned_free(pListEntry);
+
 		return packet;
 	}
 
@@ -468,7 +498,21 @@ namespace JNet
 	void Network::Destroy()
 	{
 		DestroyThread();
+		DestroyPacketSList();
 		WSACleanup();
+	}
+
+	void Network::DestroyPacketSList()
+	{
+		InterlockedFlushSList(mRecvPacketSListHead);
+		PSLIST_ENTRY FirstEntry = InterlockedPopEntrySList(mRecvPacketSListHead);
+		
+		if (NULL != FirstEntry)
+		{
+			JCommon::Logger::Error("InterlockedFlushSList is not empty");
+		}
+
+		_aligned_free(mRecvPacketSListHead);
 	}
 
 	void Network::DestroyThread()

@@ -47,6 +47,12 @@ namespace JCommon
 		}
 	};
 
+	struct EntryPacket
+	{
+		SLIST_ENTRY			mEntry;
+		JCommon::stPacket	mPacket;
+	};
+
 	struct LoginReqPacket
 	{
 		char mUserId[MAX_USER_ID_BYTE_LENGTH] = { 0, };

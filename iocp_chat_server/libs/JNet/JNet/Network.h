@@ -47,6 +47,8 @@ namespace JNet
 
 		JCommon::ERROR_CODE		RegisterListenSocketToIOCP();
 
+		JCommon::ERROR_CODE		InitRecvPacketSListHead();
+		
 		void				SetWokerThread();
 
 		void				WokerThread();
@@ -77,6 +79,8 @@ namespace JNet
 
 		void				PushRecvedPacket(const JCommon::stPacket& packet);
 
+		void				DestroyPacketSList();
+
 	private:
 		UINT32						mMaxClientCount = 0;
 		UINT16                      mMaxThreadCount = 0;
@@ -95,7 +99,6 @@ namespace JNet
 
 		int			                mClientCnt = 0;
 
-		std::queue<JCommon::stPacket>	mRecvPacketPool;
-		std::mutex						mRecvPacketPoolLock;
+		PSLIST_HEADER					mRecvPacketSListHead;
 	};
 }
