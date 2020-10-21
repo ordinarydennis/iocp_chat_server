@@ -48,9 +48,7 @@ namespace JNet
 
 		void					AsyncAccept(SOCKET listenSocket);
 
-		void					SetRecvPacketBuff(const char* pData, const size_t dataSize);
-
-		std::optional<JCommon::stPacket>	GetPacket();
+		std::optional<JCommon::stPacket>	RecvPacket(const char* pData, const size_t dataSize);
 
 	private:
 		void					Init();
@@ -70,10 +68,7 @@ namespace JNet
 		stOverlappedEx				mRecvOverlappedEx;
 		stOverlappedEx				mSendOverlappedEx;
 
-		std::queue<JCommon::stPacket>        mRecvPacketPool;
 		std::deque<JCommon::stPacket>        mSendPacketPool;
-
-		std::mutex                  mRecvPacketPoolLock;
 		std::mutex                  mSendPacketPoolLock;
 
 		char						mRecvBuf[JCommon::MAX_SOCKBUF] = { 0, };

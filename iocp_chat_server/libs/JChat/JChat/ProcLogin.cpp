@@ -12,7 +12,7 @@ namespace JChat
 		loginReqPacket->mUserId;
 		loginReqPacket->mUserPw;
 
-		JCommon::Logger::Info("Login User Id : %s passwd : %s ", loginReqPacket->mUserId, loginReqPacket->mUserPw);
+		JCommon::Logger::Info("Login User Index : %d User Id : %s passwd : %s ", packet.mClientFrom, loginReqPacket->mUserId, loginReqPacket->mUserPw);
 
 		JNet::LoginReqRedisPacket redisReqPacket;
 		redisReqPacket.mClientId = packet.mClientFrom;

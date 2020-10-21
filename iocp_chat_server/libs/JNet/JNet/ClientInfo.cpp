@@ -92,8 +92,8 @@ namespace JNet
 
 	bool ClientInfo::IsSending()
 	{
-		//TODO 읽을 땐 lock 없어도 되는건가?
-		return mIsSending;
+		//Reading interlocked variables
+		return InterlockedExchangeAdd(&mIsSending, 0);
 	}
 
 	std::optional<JCommon::stPacket> ClientInfo::GetSendPacket()
@@ -144,7 +144,7 @@ namespace JNet
 		PostAccept(listenSocket);
 	}
 
-	void ClientInfo::SetRecvPacketBuff(const char* pData, const size_t dataSize)
+	std::optional<JCommon::stPacket> ClientInfo::RecvPacket(const char* pData, const size_t dataSize)
 	{
 		if ((mRecvPacketWPos + dataSize) >= PACKET_DATA_BUFFER_SIZE)
 		{
@@ -165,11 +165,7 @@ namespace JNet
 
 		memcpy_s(&mRecvBuffer[mRecvPacketWPos], dataSize, pData, dataSize);
 		mRecvPacketWPos += static_cast<UINT32>(dataSize);
-	}
 
-	std::optional<JCommon::stPacket> ClientInfo::GetPacket()
-	{
-		//TODO mRecvPacketWPos, mRecvPacketRPos Lock 필요 할 듯?
 		UINT32 remainByte = mRecvPacketWPos - mRecvPacketRPos;
 
 		if (remainByte < JCommon::PACKET_HEADER_SIZE)
@@ -177,7 +173,7 @@ namespace JNet
 			return std::nullopt;
 		}
 
-		auto pHeader = (JCommon::stPacketHeader*)&mRecvBuffer[mRecvPacketRPos];
+		auto pHeader = (JCommon::stPacketHeader*)(&mRecvBuffer[mRecvPacketRPos]);
 
 		if (pHeader->mSize > remainByte)
 		{
@@ -189,7 +185,13 @@ namespace JNet
 		packet.mHeader.mSize = pHeader->mSize;
 		packet.mClientFrom = mId;
 		//TODO 불필요한 복사 개선하기
-		memcpy_s(packet.mBody, pHeader->mSize, &mRecvBuffer[JCommon::PACKET_HEADER_SIZE + mRecvPacketRPos], pHeader->mSize);
+		size_t bodySize = pHeader->mSize - JCommon::PACKET_HEADER_SIZE;
+		memcpy_s(
+			packet.mBody, 
+			bodySize,
+			&mRecvBuffer[JCommon::PACKET_HEADER_SIZE + mRecvPacketRPos], 
+			bodySize
+		);
 
 		mRecvPacketRPos += pHeader->mSize;
 

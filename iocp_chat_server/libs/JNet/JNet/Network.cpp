@@ -190,6 +190,7 @@ namespace JNet
 				//check close client..			
 				if (FALSE == bSuccess || (0 == dwIoSize && TRUE == bSuccess))
 				{
+					//TODO API 만들어서 넣어주기
 					JCommon::Logger::Info("socket(%d) 접속 끊김", (int)pClientInfo->GetClientSocket());
 					CloseSocket(pClientInfo);
 					continue;
@@ -295,17 +296,35 @@ namespace JNet
 
 	void Network::ProcRecvOperation(ClientInfo* pClientInfo, const size_t size)
 	{
-		pClientInfo->SetRecvPacketBuff(pClientInfo->GetRecvBuf(), size);
-		
-		AddToClientPoolRecvPacket(pClientInfo);
+		auto packet = pClientInfo->RecvPacket(pClientInfo->GetRecvBuf(), size);
+
+		if (packet.has_value())
+		{
+			PushRecvedPacket(packet.value());
+		}
 
 		PostRecv(pClientInfo);
 	}
 
-	void Network::AddToClientPoolRecvPacket(ClientInfo* pClientInfo)
+	void Network::PushRecvedPacket(const JCommon::stPacket& packet)
 	{
-		std::lock_guard<std::mutex> guard(mRecvPacketLock);
-		mClientPoolRecvedPacket.push(pClientInfo);
+		//TODO interlocked list 로 수정하기
+		std::lock_guard<std::mutex> guard(mRecvPacketPoolLock);
+		mRecvPacketPool.push(packet);
+	}
+
+	std::optional<JCommon::stPacket> Network::GetRecvedPacket()
+	{
+		//TODO interlocked list 로 수정하기
+		std::lock_guard<std::mutex> guard(mRecvPacketPoolLock);
+		if (mRecvPacketPool.empty())
+		{
+			return std::nullopt;
+		}
+
+		auto packet = mRecvPacketPool.front();
+		mRecvPacketPool.pop();
+		return packet;
 	}
 
 	//CompletionPort객체와 소켓과 CompletionKey를
@@ -402,27 +421,6 @@ namespace JNet
 	std::function<void(JCommon::stPacket)> Network::GetPacketSender()
 	{
 		return std::bind(&Network::SendPacket, this, std::placeholders::_1);
-	}
-
-	std::optional<ClientInfo*> Network::GetClientRecvedPacket()
-	{
-		std::lock_guard<std::mutex> guard(mRecvPacketLock);
-		if (mClientPoolRecvedPacket.empty())
-		{
-			return std::nullopt;
-		}
-
-		ClientInfo* front = mClientPoolRecvedPacket.front();
-		return front;
-	}
-
-	void Network::PopClientRecvedPacket()
-	{
-		std::lock_guard<std::mutex> guard(mRecvPacketLock);
-		if (false == mClientPoolRecvedPacket.empty())
-		{
-			mClientPoolRecvedPacket.pop();
-		}
 	}
 
 	void Network::SendPacket(const JCommon::stPacket& packet)

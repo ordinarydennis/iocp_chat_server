@@ -68,18 +68,11 @@ namespace JChat
 		while (mReceivePacketRun)
 		{
 			bool isPacket = false;
-			auto clientRecvedPacketOpt = mNetwork->GetClientRecvedPacket();
-			if (std::nullopt != clientRecvedPacketOpt)
+			auto recvedPacketOpt = mNetwork->GetRecvedPacket();
+			if (std::nullopt != recvedPacketOpt)
 			{
 				isPacket = true;
-
-				auto clientRecvedPacket = clientRecvedPacketOpt.value();
-				auto packetOpt = clientRecvedPacket->GetPacket();
-				if (std::nullopt != packetOpt)
-				{
-					ProcessPacket(packetOpt.value());
-					mNetwork->PopClientRecvedPacket();
-				}
+				ProcessPacket(recvedPacketOpt.value());
 			}
 
 			auto taskOpt = mRedis->GetResponseTask();
