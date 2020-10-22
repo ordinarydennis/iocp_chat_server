@@ -19,4 +19,9 @@ namespace JChat
 	{
 		mChatUserDict[chatUser.GetClientId()] = chatUser;
 	}
+
+	void ChatUserManager::RemoveUser(const UINT32 userId)
+	{
+		mChatUserDict.erase(userId);
+	}
 }

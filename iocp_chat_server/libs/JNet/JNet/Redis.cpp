@@ -51,7 +51,7 @@ namespace JNet
 
 	void Redis::ProcessRedisPacket(const RedisTask& task)
 	{
-		auto iter = mRecvProcDict.find(task.GetTaskId());
+		auto iter = mRecvProcDict.find(task.mTaskID);
 		if (iter != mRecvProcDict.end())
 		{
 			(this->*(iter->second))(task);
@@ -87,40 +87,40 @@ namespace JNet
 
 	void Redis::RequestTask(const RedisTask& task)
 	{
-		std::lock_guard<std::mutex> guard(mRequestTaskLock);
-		mRequestTaskPool.push(task);
+		EntryRedisTask entry;
+		entry.mTask = task;
+		mRequestTaskQueue.Push(entry);
 	}
 
 	void Redis::ResponseTask(const RedisTask& task)
 	{
-		std::lock_guard<std::mutex> guard(mResponseTaskLock);
-		mResponseTaskPool.push(task);
+		EntryRedisTask entry;
+		entry.mTask = task;
+		mResponseTaskQueue.Push(entry);
 	}
 
 	std::optional<RedisTask> Redis::GetRequestTask()
 	{
-		std::lock_guard<std::mutex> guard(mRequestTaskLock);
-		if (mRequestTaskPool.empty())
+		auto task = mRequestTaskQueue.Front();
+		if (nullptr == task)
 		{
 			return std::nullopt;
 		}
-
-		RedisTask task = mRequestTaskPool.front();
-		mRequestTaskPool.pop();
-		return task;
+		auto retTask = task->mTask;
+		mRequestTaskQueue.Pop();
+		return retTask;
 	}
 
 	std::optional<RedisTask> Redis::GetResponseTask()
 	{
-		std::lock_guard<std::mutex> guard(mResponseTaskLock);
-		if (mResponseTaskPool.empty())
+		auto task = mResponseTaskQueue.Front();
+		if (nullptr == task)
 		{
 			return std::nullopt;
 		}
-
-		RedisTask task = mResponseTaskPool.front();
-		mResponseTaskPool.pop();
-		return task;
+		auto retTask = task->mTask;
+		mResponseTaskQueue.Pop();
+		return retTask;
 	}
 
 	void Redis::Destroy()

@@ -9,9 +9,9 @@ namespace JNet
 {
 	class Network;
 	class Redis;
-	class RedisTask;
 	enum class REDIS_TASK_ID : UINT16;
 	struct stOverlappedEx;
+	struct RedisTask;
 }
 
 namespace JCommon

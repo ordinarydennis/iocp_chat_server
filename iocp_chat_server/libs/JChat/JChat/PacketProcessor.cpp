@@ -103,7 +103,7 @@ namespace JChat
 
 	void PacketProcessor::ProcessRedisPacket(const JNet::RedisTask& task)
 	{
-		auto iter = mRecvRedisPacketProcDict.find(task.GetTaskId());
+		auto iter = mRecvRedisPacketProcDict.find(task.mTaskID);
 		if (iter != mRecvRedisPacketProcDict.end())
 		{
 			(this->*(iter->second))(task);

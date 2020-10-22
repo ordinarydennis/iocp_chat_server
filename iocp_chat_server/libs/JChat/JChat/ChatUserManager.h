@@ -18,6 +18,8 @@ namespace JChat
 
 		void AddUser(const ChatUser& chatUser);
 
+		void RemoveUser(const UINT32 userId);
+
 	private:
 		std::unordered_map<UINT32, ChatUser>	mChatUserDict;
 	};

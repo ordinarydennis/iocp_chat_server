@@ -15,21 +15,20 @@ namespace JNet
 		RedisTask EncodeTask()
 		{
 			RedisTask task;
-			task.SetClientId(mClientId);
-			task.SetTaskId(mRedisTaskId);
-			char buf[JCommon::MAX_USER_ID_BYTE_LENGTH + JCommon::MAX_USER_PW_BYTE_LENGTH] = { 0, };
-			memcpy_s(buf, JCommon::MAX_USER_ID_BYTE_LENGTH, mUserId, JCommon::MAX_USER_ID_BYTE_LENGTH);
-			memcpy_s(&buf[JCommon::MAX_USER_ID_BYTE_LENGTH], JCommon::MAX_USER_PW_BYTE_LENGTH, mUserPw, JCommon::MAX_USER_PW_BYTE_LENGTH);
-			task.SetData(buf, JCommon::MAX_USER_ID_BYTE_LENGTH + JCommon::MAX_USER_PW_BYTE_LENGTH);
+			task.mClientId = mClientId;
+			task.mTaskID = mRedisTaskId;
+			memcpy_s(task.mData, JCommon::MAX_USER_ID_BYTE_LENGTH, mUserId, JCommon::MAX_USER_ID_BYTE_LENGTH);
+			memcpy_s(&task.mData[JCommon::MAX_USER_ID_BYTE_LENGTH], JCommon::MAX_USER_PW_BYTE_LENGTH, mUserPw, JCommon::MAX_USER_PW_BYTE_LENGTH);
+			task.mDataSize = JCommon::MAX_USER_ID_BYTE_LENGTH + JCommon::MAX_USER_PW_BYTE_LENGTH;
 			return task;
 		}
 
 		void DecodeTask(const RedisTask& task)
 		{
-			mClientId = task.GetClientId();
-			mRedisTaskId = task.GetTaskId();
-			memcpy_s(mUserId, JCommon::MAX_USER_ID_BYTE_LENGTH, task.GetData(), JCommon::MAX_USER_ID_BYTE_LENGTH);
-			memcpy_s(mUserPw, JCommon::MAX_USER_PW_BYTE_LENGTH, &task.GetData()[JCommon::MAX_USER_ID_BYTE_LENGTH], JCommon::MAX_USER_PW_BYTE_LENGTH);
+			mClientId = task.mClientId;
+			mRedisTaskId = task.mTaskID;
+			memcpy_s(mUserId, JCommon::MAX_USER_ID_BYTE_LENGTH, task.mData, JCommon::MAX_USER_ID_BYTE_LENGTH);
+			memcpy_s(mUserPw, JCommon::MAX_USER_PW_BYTE_LENGTH, &task.mData[JCommon::MAX_USER_ID_BYTE_LENGTH], JCommon::MAX_USER_PW_BYTE_LENGTH);
 		}
 	};
 
@@ -43,21 +42,20 @@ namespace JNet
 		RedisTask EncodeTask()
 		{
 			RedisTask task;
-			task.SetClientId(mClientId);
-			task.SetTaskId(mRedisTaskId);
-			char buf[JCommon::MAX_USER_ID_BYTE_LENGTH + sizeof(mResult)] = { 0, };
-			memcpy_s(buf, JCommon::MAX_USER_ID_BYTE_LENGTH, mUserId, JCommon::MAX_USER_ID_BYTE_LENGTH);
-			memcpy_s(&buf[JCommon::MAX_USER_ID_BYTE_LENGTH], sizeof(mResult), &mResult, sizeof(mResult));
-			task.SetData(buf, JCommon::MAX_USER_ID_BYTE_LENGTH + sizeof(mResult));
+			task.mClientId = mClientId;
+			task.mTaskID = mRedisTaskId;
+			memcpy_s(task.mData, JCommon::MAX_USER_ID_BYTE_LENGTH, mUserId, JCommon::MAX_USER_ID_BYTE_LENGTH);
+			memcpy_s(&task.mData[JCommon::MAX_USER_ID_BYTE_LENGTH], sizeof(mResult), &mResult, sizeof(mResult));
+			task.mDataSize = JCommon::MAX_USER_ID_BYTE_LENGTH + sizeof(mResult);
 			return task;
 		}
 
 		void DecodeTask(const RedisTask& task)
 		{
-			mClientId = task.GetClientId();
-			mRedisTaskId = task.GetTaskId();
-			memcpy_s(mUserId, JCommon::MAX_USER_ID_BYTE_LENGTH, task.GetData(), JCommon::MAX_USER_ID_BYTE_LENGTH);
-			memcpy_s(&mResult, sizeof(mResult), &task.GetData()[JCommon::MAX_USER_ID_BYTE_LENGTH], sizeof(mResult));
+			mClientId = task.mClientId;
+			mRedisTaskId = task.mTaskID;
+			memcpy_s(mUserId, JCommon::MAX_USER_ID_BYTE_LENGTH, task.mData, JCommon::MAX_USER_ID_BYTE_LENGTH);
+			memcpy_s(&mResult, sizeof(mResult), &task.mData[JCommon::MAX_USER_ID_BYTE_LENGTH], sizeof(mResult));
 		}
 	};
 }

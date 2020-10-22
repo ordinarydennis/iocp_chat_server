@@ -2,6 +2,7 @@
 
 #include "Define.h"
 #include "RedisDefine.h"
+#include "SQueue.h"
 #include <thread>
 #include <queue>
 #include <mutex>
@@ -47,14 +48,12 @@ namespace JNet
 		RedisCpp::CRedisConn*			mConn = nullptr;
 		std::thread						mThread;
 		bool							mIsThreadRun = false;
-		std::queue<RedisTask>			mRequestTaskPool;
-		std::queue<RedisTask>			mResponseTaskPool;
-
-		std::mutex						mRequestTaskLock;
-		std::mutex						mResponseTaskLock;
 
 		using receiver = void(Redis::*)(const RedisTask& task);
 		std::unordered_map<REDIS_TASK_ID, receiver>	mRecvProcDict;
+
+		JNet::SQueue<EntryRedisTask>	mRequestTaskQueue;
+		JNet::SQueue<EntryRedisTask>	mResponseTaskQueue;
 	};
 }
 

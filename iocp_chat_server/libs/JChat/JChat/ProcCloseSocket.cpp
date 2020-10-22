@@ -10,14 +10,19 @@ namespace JChat
 	void PacketProcessor::ProcCloseSocket(const JCommon::stPacket& packet)
 	{
 		const JCommon::CloseSocketReqPacket* closeSocketReqPacket = reinterpret_cast<const JCommon::CloseSocketReqPacket*>(&packet.mBody);
+
+		JCommon::Logger::Info("socket(%d) Á¢¼Ó ²÷±è", (int)closeSocketReqPacket->mUniqueId);
+		mNetwork->CloseSocket(closeSocketReqPacket->mUniqueId);
+
 		auto chatUser = mChatUserManager->GetUser(closeSocketReqPacket->mUniqueId);
+		
+		//Á¢¼Ó¸¸ ÇÏ°í ·Î±×ÀÎÀº ¾ÈÇÑ À¯Àú
 		if (nullptr == chatUser)
 		{
 			return;
 		}
-		
-		auto state = chatUser->GetState();
 
+		auto state = chatUser->GetState();
 		if (ChatUser::STATE::ENTER_ROOM == state)
 		{
 			Room* room = mRoomManager->GetRoom(chatUser->GetRoomNumber());
@@ -38,12 +43,7 @@ namespace JChat
 				sizeof(roomLeaveNTFPacket),
 				mPacketSender
 			);
-
-			chatUser->SetState(ChatUser::STATE::LOGIN);
-			
 		}
-
-		JCommon::Logger::Info("socket(%d) Á¢¼Ó ²÷±è", (int)closeSocketReqPacket->mUniqueId);
-		mNetwork->CloseSocket(closeSocketReqPacket->mUniqueId);
+		mChatUserManager->RemoveUser(chatUser->GetClientId());
 	}
 }

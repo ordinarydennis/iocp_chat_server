@@ -13,8 +13,8 @@ namespace JChat
 		resultResPacket.mResult = loginResRedisPacket.mResult;
 
 		SendPacket(
-			task.GetClientId(),
-			task.GetClientId(),
+			task.mClientId,
+			task.mClientId,
 			static_cast<UINT16>(JCommon::PACKET_ID::LOGIN_RES),
 			reinterpret_cast<char*>(&resultResPacket),
 			sizeof(resultResPacket)
@@ -22,7 +22,7 @@ namespace JChat
 
 		if (JCommon::CLIENT_ERROR_CODE::NONE == loginResRedisPacket.mResult)
 		{
-			ChatUser chatUser(loginResRedisPacket.mUserId, task.GetClientId());
+			ChatUser chatUser(loginResRedisPacket.mUserId, task.mClientId);
 			chatUser.SetState(ChatUser::STATE::LOGIN);
 			mChatUserManager->AddUser(chatUser);
 		}
