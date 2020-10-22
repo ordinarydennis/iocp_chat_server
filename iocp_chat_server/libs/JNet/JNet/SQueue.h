@@ -90,17 +90,22 @@ namespace JNet
 
 		void Pop()
 		{
-			T* pHeader = reinterpret_cast<T*>(mReversedHeader);
+			if (nullptr == mReversedHeader)
+			{
+				return;
+			}
+
+			auto deleteHeader = mReversedHeader;
 			mReversedHeader = mReversedHeader->Next;
-			_aligned_free(reinterpret_cast<PSLIST_ENTRY>(pHeader));
+			_aligned_free(deleteHeader);
 		}
 
-		static void PopAll(PSLIST_ENTRY header)
+		static void PopAll(PSLIST_ENTRY entryHeader)
 		{
-			while (nullptr != header)
+			while (nullptr != entryHeader)
 			{
-				PSLIST_ENTRY clear = header;
-				header = clear->Next;
+				PSLIST_ENTRY clear = entryHeader;
+				entryHeader = clear->Next;
 				_aligned_free(clear);
 			}
 		}
