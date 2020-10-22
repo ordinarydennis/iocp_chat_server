@@ -3,6 +3,7 @@
 #include "Common.h"
 #include "Define.h"
 #include "ClientInfo.h"
+#include "SQueue.h"
 #include <thread>
 #include <vector>
 #include <mutex>
@@ -30,7 +31,7 @@ namespace JNet
 
 		std::function<void(JCommon::stPacket)> GetPacketSender();
 
-		std::optional<JCommon::stPacket>		GetRecvedPacket();
+		std::queue<JCommon::stPacket>		GetRecvedPacketQueue();
 
 	private:
 		void					SetMaxThreadCount();
@@ -46,8 +47,6 @@ namespace JNet
 		JCommon::ERROR_CODE		BindandListen(const UINT16 port);
 
 		JCommon::ERROR_CODE		RegisterListenSocketToIOCP();
-
-		JCommon::ERROR_CODE		InitRecvPacketSListHead();
 		
 		void				SetWokerThread();
 
@@ -79,8 +78,6 @@ namespace JNet
 
 		void				PushRecvedPacket(const JCommon::stPacket& packet);
 
-		void				DestroyPacketSList();
-
 	private:
 		UINT32						mMaxClientCount = 0;
 		UINT16                      mMaxThreadCount = 0;
@@ -99,6 +96,6 @@ namespace JNet
 
 		int			                mClientCnt = 0;
 
-		PSLIST_HEADER					mRecvPacketSListHead;
+		JNet::SQueue<JCommon::EntryPacket>		mSQueue;
 	};
 }

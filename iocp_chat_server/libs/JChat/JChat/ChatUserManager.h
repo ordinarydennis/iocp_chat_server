@@ -20,7 +20,6 @@ namespace JChat
 
 	private:
 		std::unordered_map<UINT32, ChatUser>	mChatUserDict;
-		std::mutex								mChatUserDictLock;
 	};
 }
 

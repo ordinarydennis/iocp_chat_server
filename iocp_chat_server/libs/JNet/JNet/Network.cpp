@@ -42,11 +42,6 @@ namespace JNet
 			return errorCode;
 		}
 
-		errorCode = InitRecvPacketSListHead();
-		if (JCommon::ERROR_CODE::NONE != errorCode)
-		{
-			return errorCode;
-		}
 
 		return JCommon::ERROR_CODE::NONE;
 	}
@@ -138,19 +133,6 @@ namespace JNet
 		return JCommon::ERROR_CODE::NONE;
 	}
 
-	JCommon::ERROR_CODE Network::InitRecvPacketSListHead()
-	{
-		mRecvPacketSListHead = (PSLIST_HEADER)_aligned_malloc(sizeof(SLIST_HEADER), MEMORY_ALLOCATION_ALIGNMENT);
-
-		if (NULL == mRecvPacketSListHead)
-		{
-			JCommon::Logger::Error("mRecvPacketSListHead Memeory Allocate Fail _aligned_malloc");
-			return JCommon::ERROR_CODE::INIT_RECV_PACKET_SLIST;;
-		}
-
-		InitializeSListHead(mRecvPacketSListHead);
-		return JCommon::ERROR_CODE::NONE;;
-	}
 
 	void Network::Run()
 	{
@@ -328,33 +310,28 @@ namespace JNet
 
 	void Network::PushRecvedPacket(const JCommon::stPacket& packet)
 	{
-		JCommon::EntryPacket* pEntryPacket = (JCommon::EntryPacket*)_aligned_malloc(sizeof(JCommon::EntryPacket), MEMORY_ALLOCATION_ALIGNMENT);
-		if (NULL == pEntryPacket)
-		{
-			//cout << "pTestData Memeory Allocate Fail _aligned_malloc" << endl;
-			return ;
-		}
-
-		pEntryPacket->mPacket = packet;
-
-		InterlockedPushEntrySList(mRecvPacketSListHead, &(pEntryPacket->mEntry));
+		JCommon::EntryPacket pEntryPacket;
+		pEntryPacket.mPacket = packet;
+		mSQueue.Push(pEntryPacket);
 	}
 
-	std::optional<JCommon::stPacket> Network::GetRecvedPacket()
+
+	std::queue<JCommon::stPacket> Network::GetRecvedPacketQueue()
 	{
-		PSLIST_ENTRY pListEntry = InterlockedPopEntrySList(mRecvPacketSListHead);
-		if (NULL == pListEntry)
+		std::queue<JCommon::stPacket> packetQueue;
+
+		JCommon::EntryPacket* queueHeader = mSQueue.GetHeader();
+
+		JCommon::EntryPacket* iter = queueHeader;
+		while (nullptr != iter)
 		{
-			return std::nullopt;
+			packetQueue.push(iter->mPacket);
+			iter = reinterpret_cast<JCommon::EntryPacket*>(iter->Next);
 		}
 
-		JCommon::EntryPacket* pEntryPacket = reinterpret_cast<JCommon::EntryPacket*>(pListEntry);
+		JNet::SQueue<JCommon::EntryPacket>::PopAll(queueHeader);
 
-		JCommon::stPacket packet = pEntryPacket->mPacket;
-
-		_aligned_free(pListEntry);
-
-		return packet;
+		return packetQueue;
 	}
 
 	//CompletionPort按眉客 家南苞 CompletionKey甫
@@ -498,22 +475,9 @@ namespace JNet
 	void Network::Destroy()
 	{
 		DestroyThread();
-		DestroyPacketSList();
 		WSACleanup();
 	}
 
-	void Network::DestroyPacketSList()
-	{
-		InterlockedFlushSList(mRecvPacketSListHead);
-		PSLIST_ENTRY FirstEntry = InterlockedPopEntrySList(mRecvPacketSListHead);
-		
-		if (NULL != FirstEntry)
-		{
-			JCommon::Logger::Error("InterlockedFlushSList is not empty");
-		}
-
-		_aligned_free(mRecvPacketSListHead);
-	}
 
 	void Network::DestroyThread()
 	{

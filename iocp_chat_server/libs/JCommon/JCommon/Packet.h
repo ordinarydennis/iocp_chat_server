@@ -47,9 +47,9 @@ namespace JCommon
 		}
 	};
 
-	struct EntryPacket
+	//InterlockedSList 계열에 사용할 패킷 구조체
+	struct EntryPacket : SLIST_ENTRY
 	{
-		SLIST_ENTRY			mEntry;
 		JCommon::stPacket	mPacket;
 	};
 

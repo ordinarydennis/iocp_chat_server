@@ -53,5 +53,8 @@
     <ClInclude Include="RedisConfig.h">
       <Filter>Source Files\public</Filter>
     </ClInclude>
+    <ClInclude Include="SQueue.h">
+      <Filter>Source Files\public</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
