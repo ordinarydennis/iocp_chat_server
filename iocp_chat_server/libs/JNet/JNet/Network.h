@@ -31,7 +31,7 @@ namespace JNet
 
 		std::function<void(JCommon::stPacket)> GetPacketSender();
 
-		std::queue<JCommon::stPacket>		GetRecvedPacketQueue();
+		std::optional<JCommon::stPacket>		GetRecvedPacket();
 
 	private:
 		void					SetMaxThreadCount();
@@ -96,6 +96,6 @@ namespace JNet
 
 		int			                mClientCnt = 0;
 
-		JNet::SQueue<JCommon::EntryPacket>		mSQueue;
+		JNet::SQueue<JCommon::EntryPacket>		mRecvedPacketQueue;
 	};
 }

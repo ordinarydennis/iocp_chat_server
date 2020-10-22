@@ -1,6 +1,6 @@
 #pragma once
-#include <Windows.h>
 #include "Logger.h"
+#include <Windows.h>
 
 namespace JNet
 {
@@ -29,14 +29,14 @@ namespace JNet
 		{
 			if (NULL == mRecvPacketSListHead)
 			{
-				//log
+				//TODO log
 				return; 
 			}
 
 			T* pEntry = (T*)_aligned_malloc(sizeof(T), MEMORY_ALLOCATION_ALIGNMENT);
 			if (NULL == pEntry)
 			{
-				//log
+				//TODO log
 				return;
 			}
 
@@ -66,6 +66,35 @@ namespace JNet
 			return reinterpret_cast<T*>(reversedHeader);
 		}
 
+		T* Front()
+		{
+			if (nullptr == mReversedHeader)
+			{
+				PSLIST_ENTRY header = InterlockedFlushSList(mRecvPacketSListHead);
+				while (nullptr != header)
+				{
+					PSLIST_ENTRY tmp = mReversedHeader;
+					mReversedHeader = header;
+					header = mReversedHeader->Next;
+					mReversedHeader->Next = tmp;
+				}
+			}
+
+			if (nullptr == mReversedHeader)
+			{
+				return nullptr;
+			}
+
+			return reinterpret_cast<T*>(mReversedHeader);
+		}
+
+		void Pop()
+		{
+			T* pHeader = reinterpret_cast<T*>(mReversedHeader);
+			mReversedHeader = mReversedHeader->Next;
+			_aligned_free(reinterpret_cast<PSLIST_ENTRY>(pHeader));
+		}
+
 		static void PopAll(PSLIST_ENTRY header)
 		{
 			while (nullptr != header)
@@ -77,7 +106,8 @@ namespace JNet
 		}
 
 	private:
-		PSLIST_HEADER				mRecvPacketSListHead;
+		PSLIST_HEADER				mRecvPacketSListHead = nullptr;
+		PSLIST_ENTRY				mReversedHeader = nullptr;
 	};
 }
 

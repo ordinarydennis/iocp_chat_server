@@ -312,26 +312,20 @@ namespace JNet
 	{
 		JCommon::EntryPacket pEntryPacket;
 		pEntryPacket.mPacket = packet;
-		mSQueue.Push(pEntryPacket);
+		mRecvedPacketQueue.Push(pEntryPacket);
 	}
 
-
-	std::queue<JCommon::stPacket> Network::GetRecvedPacketQueue()
+	std::optional<JCommon::stPacket> Network::GetRecvedPacket()
 	{
-		std::queue<JCommon::stPacket> packetQueue;
-
-		JCommon::EntryPacket* queueHeader = mSQueue.GetHeader();
-
-		JCommon::EntryPacket* iter = queueHeader;
-		while (nullptr != iter)
+		auto packet = mRecvedPacketQueue.Front();
+		if (nullptr == packet)
 		{
-			packetQueue.push(iter->mPacket);
-			iter = reinterpret_cast<JCommon::EntryPacket*>(iter->Next);
+			return std::nullopt;
 		}
 
-		JNet::SQueue<JCommon::EntryPacket>::PopAll(queueHeader);
-
-		return packetQueue;
+		JCommon::stPacket recvedPacket = packet->mPacket;
+		mRecvedPacketQueue.Pop();
+		return recvedPacket;
 	}
 
 	//CompletionPort按眉客 家南苞 CompletionKey甫

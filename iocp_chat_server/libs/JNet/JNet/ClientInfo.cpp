@@ -98,22 +98,18 @@ namespace JNet
 
 	std::optional<JCommon::stPacket> ClientInfo::GetSendPacket()
 	{
-		std::lock_guard<std::mutex> guard(mSendPacketPoolLock);
-		if (mSendPacketPool.empty())
+		auto entryPacket = mSendPacketQueue.Front();
+		if (nullptr == entryPacket)
 		{
 			return std::nullopt;
 		}
 
-		return mSendPacketPool.front();
+		return entryPacket->mPacket;
 	}
 
 	void ClientInfo::PopSendPacketPool()
 	{
-		std::lock_guard<std::mutex> guard(mSendPacketPoolLock);
-		if (false == mSendPacketPool.empty())
-		{
-			mSendPacketPool.pop_front();
-		}
+		mSendPacketQueue.Pop();
 	}
 
 	void ClientInfo::SetSending(const bool bSending)
@@ -123,8 +119,9 @@ namespace JNet
 
 	void ClientInfo::AddSendPacket(const JCommon::stPacket& packet)
 	{
-		std::lock_guard<std::mutex> guard(mSendPacketPoolLock);
-		mSendPacketPool.push_back(packet);
+		JCommon::EntryPacket entryPacket;
+		entryPacket.mPacket = packet;
+		mSendPacketQueue.Push(entryPacket);
 	}
 
 	void ClientInfo::AsyncAccept(SOCKET listenSocket)
@@ -180,6 +177,7 @@ namespace JNet
 			return std::nullopt;
 		}
 
+		//TODO 패킷 크기 별로 분기
 		JCommon::stPacket packet;
 		packet.mHeader.mPacket_id = pHeader->mPacket_id;
 		packet.mHeader.mSize = pHeader->mSize;

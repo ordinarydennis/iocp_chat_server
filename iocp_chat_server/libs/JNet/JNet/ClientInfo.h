@@ -2,6 +2,7 @@
 
 #include "Packet.h"
 #include "Define.h"
+#include "SQueue.h"
 #include <mutex>
 #include <optional>
 #include <queue>
@@ -68,8 +69,7 @@ namespace JNet
 		stOverlappedEx				mRecvOverlappedEx;
 		stOverlappedEx				mSendOverlappedEx;
 
-		std::deque<JCommon::stPacket>        mSendPacketPool;
-		std::mutex                  mSendPacketPoolLock;
+		JNet::SQueue<JCommon::EntryPacket>		 mSendPacketQueue;
 
 		char						mRecvBuf[JCommon::MAX_SOCKBUF] = { 0, };
 		char						mSendBuf[JCommon::MAX_SOCKBUF] = { 0, };
