@@ -26,14 +26,21 @@ namespace JChat
 		const auto roomStartIndex = args.get<UINT16>("room_start_index");
 		if (!roomStartIndex)
 		{
-			JCommon::Logger::Error("Invalide Service Argument, error code: %d", JCommon::ERROR_CODE::ARGS_PORT_ROOM_START_INDEX);
+			JCommon::Logger::Error("Invalide Service Argument, error code: %d", JCommon::ERROR_CODE::ARGS_ROOM_START_INDEX);
 			return std::nullopt;
 		}
 
 		const auto roomMaxUserCount = args.get<UINT16>("room_max_user_count");
 		if (!roomMaxUserCount)
 		{
-			JCommon::Logger::Error("Invalide Service Argument, error code: %d", JCommon::ERROR_CODE::ARGS_PORT_ROOM_MAX_USER_COUNT);
+			JCommon::Logger::Error("Invalide Service Argument, error code: %d", JCommon::ERROR_CODE::ARGS_ROOM_MAX_USER_COUNT);
+			return std::nullopt;
+		}
+
+		const auto packetBuffSize = args.get<UINT16>("packet_buff_size");
+		if (!packetBuffSize)
+		{
+			JCommon::Logger::Error("Invalide Service Argument, error code: %d", JCommon::ERROR_CODE::ARGS_PACKET_BUFF_SIZE);
 			return std::nullopt;
 		}
 
@@ -42,6 +49,7 @@ namespace JChat
 		serviceArgs.mMaxClientCount = *maxClientCount;
 		serviceArgs.mRoomStartIndex = *roomStartIndex;
 		serviceArgs.mMaxRoomUserCount = *roomMaxUserCount;
+		serviceArgs.mPacketBuffSize = *packetBuffSize;
 
 		return serviceArgs;
 	}

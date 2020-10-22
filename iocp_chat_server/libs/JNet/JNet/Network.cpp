@@ -4,7 +4,7 @@
 
 namespace JNet
 {
-	JCommon::ERROR_CODE Network::Init(const UINT32 maxClientCount, const UINT16 port)
+	JCommon::ERROR_CODE Network::Init(const UINT32 maxClientCount, const UINT16 port, const size_t packetBuffSize)
 	{
 		SetMaxThreadCount();
 
@@ -28,7 +28,7 @@ namespace JNet
 			return errorCode;
 		}
 
-		CreateClient(maxClientCount);
+		CreateClient(maxClientCount, packetBuffSize);
 
 		errorCode = BindandListen(port);
 		if (JCommon::ERROR_CODE::NONE != errorCode)
@@ -86,12 +86,12 @@ namespace JNet
 		return JCommon::ERROR_CODE::NONE;
 	}
 
-	void Network::CreateClient(const UINT32 maxClientCount)
+	void Network::CreateClient(const UINT32 maxClientCount, const size_t packetBuffSize)
 	{
 		for (UINT32 i = 0; i < maxClientCount; i++)
 		{
-			mClientInfos.emplace_back(i);
-			mClientInfos[i].SetId(i);
+			mClientInfos.emplace_back();
+			mClientInfos[i].SetInfo(i, packetBuffSize);
 		}
 
 		mMaxClientCount = maxClientCount;
@@ -189,16 +189,26 @@ namespace JNet
 			}
 			else if (IOOperation::RECV == pOverlappedEx->m_eOperation)
 			{
-				//check close client..			
+				//check close client..	
+				bool isClosePacket = false;
 				if (FALSE == bSuccess || (0 == dwIoSize && TRUE == bSuccess))
 				{
-					//TODO API 만들어서 넣어주기
-					JCommon::Logger::Info("socket(%d) 접속 끊김", (int)pClientInfo->GetClientSocket());
-					CloseSocket(pClientInfo);
-					continue;
+					//header
+					JCommon::stPacketHeader header;
+					UINT32 clientId = pClientInfo->GetId();
+					size_t bodySize = sizeof(clientId);
+					header.mSize = static_cast<UINT16>(bodySize + JCommon::PACKET_HEADER_SIZE);
+					header.mPacket_id = static_cast<UINT16>(JCommon::PACKET_ID::CLOSE_SOCKET);
+
+					memcpy_s(&pClientInfo->GetRecvBuf()[0], JCommon::PACKET_HEADER_SIZE, &header, JCommon::PACKET_HEADER_SIZE);
+					memcpy_s(&pClientInfo->GetRecvBuf()[JCommon::PACKET_HEADER_SIZE], bodySize, &clientId, bodySize);
+					
+					dwIoSize = header.mSize;
+
+					isClosePacket = true;
 				}
 
-				ProcRecvOperation(pClientInfo, dwIoSize);
+				ProcRecvOperation(pClientInfo, dwIoSize, isClosePacket);
 			}
 			else if (IOOperation::SEND == pOverlappedEx->m_eOperation)
 			{
@@ -296,7 +306,7 @@ namespace JNet
 		return id >= mMaxClientCount ? nullptr : &mClientInfos.at(id);
 	}
 
-	void Network::ProcRecvOperation(ClientInfo* pClientInfo, const size_t size)
+	void Network::ProcRecvOperation(ClientInfo* pClientInfo, const size_t size, bool isClosePacket)
 	{
 		auto completedPacket = pClientInfo->RecvPacket(pClientInfo->GetRecvBuf(), size);
 
@@ -305,7 +315,10 @@ namespace JNet
 			PushRecvedPacket(completedPacket.value());
 		}
 
-		PostRecv(pClientInfo);
+		if (false == isClosePacket)
+		{
+			PostRecv(pClientInfo);
+		}
 	}
 
 	void Network::PushRecvedPacket(const JCommon::stPacket& packet)
@@ -326,6 +339,17 @@ namespace JNet
 		JCommon::stPacket recvedPacket = packet->mPacket;
 		mRecvedPacketQueue.Pop();
 		return recvedPacket;
+	}
+
+	void Network::CloseSocket(const UINT32 cliendId)
+	{
+		auto clientInfo = GetClientInfo(cliendId);
+		if (nullptr == clientInfo)
+		{
+			JCommon::Logger::Error("Client id : %d closing socket is fail", cliendId);
+			return;
+		}
+		CloseSocket(clientInfo);
 	}
 
 	//CompletionPort객체와 소켓과 CompletionKey를

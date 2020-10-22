@@ -19,9 +19,11 @@ namespace JNet
 
 		ClientInfo(const UINT32 id);
 
+		~ClientInfo();
+
 		UINT32					GetId() const;
 
-		void					SetId(const UINT32 id);
+		void					SetInfo(const UINT32 id, const size_t packetBuffSize = JCommon::MAX_SOCKBUF);
 		
 		stOverlappedEx*			GetRecvOverlappedEx();
 
@@ -71,6 +73,10 @@ namespace JNet
 
 		JNet::SQueue<JCommon::EntryPacket>		 mSendPacketQueue;
 
+		//비동기 송수신에 사용되는 버퍼
+		//char*						mRecvBuf = nullptr;
+		//char*						mSendBuf = nullptr;
+
 		char						mRecvBuf[JCommon::MAX_SOCKBUF] = { 0, };
 		char						mSendBuf[JCommon::MAX_SOCKBUF] = { 0, };
 		char						mAcceptBuf[64] = { 0, };
@@ -79,8 +85,8 @@ namespace JNet
 
 		LONG volatile				mIsSending = 0;
 
-		//TODO 변수명 명확하게 수정
-		char*						mRecvBuffer = nullptr;
+		//수신된 패킷을 저장하는 버퍼
+		char*						mRecvPacketPool = nullptr;
 		UINT32						mRecvPacketWPos = 0;
 		UINT32						mRecvPacketRPos = 0;
 	};

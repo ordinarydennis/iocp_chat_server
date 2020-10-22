@@ -10,7 +10,8 @@ namespace JChat
 		UINT16 mPort = 0;
 		UINT32 mMaxClientCount = 0;
 		UINT32 mRoomStartIndex = 0;
-		UINT32 mMaxRoomUserCount = 0;;
+		UINT32 mMaxRoomUserCount = 0;
+		size_t mPacketBuffSize = 0;
 	};
 
 	std::optional<ServiceArgs> DecodeServiceArgs(int argc, char* argv[]);

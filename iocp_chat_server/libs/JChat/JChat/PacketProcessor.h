@@ -52,6 +52,8 @@ namespace JChat
 
 		void            ProcRoomLeave(const JCommon::stPacket& packet);
 
+		void			ProcCloseSocket(const JCommon::stPacket& packet);
+
 		void            RedisProcLogin(const JNet::RedisTask& task);
 
 		void            Destroy();

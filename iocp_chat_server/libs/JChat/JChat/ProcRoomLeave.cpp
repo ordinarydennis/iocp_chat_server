@@ -48,6 +48,7 @@ namespace JChat
 			mPacketSender
 		);
 
+		chatUser->SetState(ChatUser::STATE::LOGIN);
 		room->RemoveUser(chatUser);
 
 		JCommon::ResultResPacket resultResPacket;

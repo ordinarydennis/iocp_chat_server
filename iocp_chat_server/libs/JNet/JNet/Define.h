@@ -4,7 +4,7 @@
 
 namespace JNet
 {
-	const UINT32 PACKET_DATA_BUFFER_SIZE		= 8096;
+	const UINT32 RECV_PACKET_POOL_SIZE		= 8096;
 	const UINT64 RE_USE_SESSION_WAIT_TIMESEC	= 3;
 
 	enum class IOOperation

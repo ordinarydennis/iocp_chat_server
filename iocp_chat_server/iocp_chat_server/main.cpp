@@ -9,7 +9,7 @@ int main(int argc, char* argv[])
 {
 	JCommon::Logger::Info("Start Server");
 
-	InitCrashDump(1);
+	InitCrashDump();
 
 	auto serviceArgsOpt = JChat::DecodeServiceArgs(argc, argv);
 	if (std::nullopt == serviceArgsOpt)

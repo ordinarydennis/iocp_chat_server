@@ -23,6 +23,7 @@ namespace JChat
 		if (JCommon::CLIENT_ERROR_CODE::NONE == loginResRedisPacket.mResult)
 		{
 			ChatUser chatUser(loginResRedisPacket.mUserId, task.GetClientId());
+			chatUser.SetState(ChatUser::STATE::LOGIN);
 			mChatUserManager->AddUser(chatUser);
 		}
 	}

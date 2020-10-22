@@ -19,7 +19,7 @@ namespace JNet
 
 		~Network() = default;
 
-		JCommon::ERROR_CODE Init(const UINT32 maxClientCount, const UINT16 port);
+		JCommon::ERROR_CODE Init(const UINT32 maxClientCount, const UINT16 port, const size_t packetBuffSize);
 
 		void				Run();
 
@@ -33,6 +33,8 @@ namespace JNet
 
 		std::optional<JCommon::stPacket>		GetRecvedPacket();
 
+		void					CloseSocket(const UINT32 cliendId);
+
 	private:
 		void					SetMaxThreadCount();
 
@@ -42,7 +44,7 @@ namespace JNet
 
 		JCommon::ERROR_CODE		CreateIOCP();
 
-		void					CreateClient(const UINT32 maxClientCount);
+		void					CreateClient(const UINT32 maxClientCount, const size_t packetBuffSize);
 
 		JCommon::ERROR_CODE		BindandListen(const UINT16 port);
 
@@ -58,7 +60,7 @@ namespace JNet
 
 		bool				PostRecv(ClientInfo* pClientInfo);
 
-		void				ProcRecvOperation(ClientInfo* pClientInfo, const size_t size);
+		void				ProcRecvOperation(ClientInfo* pClientInfo, const size_t size, bool isClosePacket);
 
 		void				CloseSocket(ClientInfo* pClientInfo, const bool bIsForce = false);
 

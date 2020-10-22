@@ -34,7 +34,7 @@ namespace JChat
 	JCommon::ERROR_CODE PacketProcessor::Init(const ServiceArgs& args)
 	{
 		JCommon::ERROR_CODE errorCode = JCommon::ERROR_CODE::NONE;
-		errorCode = mNetwork->Init(args.mMaxClientCount, args.mPort);
+		errorCode = mNetwork->Init(args.mMaxClientCount, args.mPort, args.mPacketBuffSize);
 		if (JCommon::ERROR_CODE::NONE != errorCode)
 		{
 			return errorCode;
@@ -117,6 +117,7 @@ namespace JChat
 		mRecvPacketProcDict[JCommon::PACKET_ID::ROOM_ENTER_REQ] = &PacketProcessor::ProcRoomEnter;
 		mRecvPacketProcDict[JCommon::PACKET_ID::ROOM_CHAT_REQ] = &PacketProcessor::ProcRoomChat;
 		mRecvPacketProcDict[JCommon::PACKET_ID::ROOM_LEAVE_REQ] = &PacketProcessor::ProcRoomLeave;
+		mRecvPacketProcDict[JCommon::PACKET_ID::CLOSE_SOCKET] = &PacketProcessor::ProcCloseSocket;
 
 		mRecvRedisPacketProcDict[JNet::REDIS_TASK_ID::RESPONSE_LOGIN] = &PacketProcessor::RedisProcLogin;
 	}

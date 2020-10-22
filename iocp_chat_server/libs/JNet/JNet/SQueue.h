@@ -100,12 +100,12 @@ namespace JNet
 			_aligned_free(deleteHeader);
 		}
 
-		static void PopAll(PSLIST_ENTRY entryHeader)
+		static void PopAll(PSLIST_ENTRY reversedHeader)
 		{
-			while (nullptr != entryHeader)
+			while (nullptr != reversedHeader)
 			{
-				PSLIST_ENTRY clear = entryHeader;
-				entryHeader = clear->Next;
+				PSLIST_ENTRY clear = reversedHeader;
+				reversedHeader = clear->Next;
 				_aligned_free(clear);
 			}
 		}

@@ -29,18 +29,47 @@ namespace JNet
 		Init();
 	}
 
+	ClientInfo::~ClientInfo()
+	{
+		if (nullptr != mRecvPacketPool)
+		{
+			delete mRecvPacketPool;
+			mRecvPacketPool = nullptr;
+		}
+
+		//if (nullptr != mRecvBuf)
+		//{
+		//	delete mRecvBuf;
+		//	mRecvBuf = nullptr;
+		//}
+
+		//if (nullptr != mSendBuf)
+		//{
+		//	delete mSendBuf;
+		//	mRecvBuf = nullptr;
+		//}
+	}
+
 	void ClientInfo::Init()
 	{
 		ZeroMemory(&mAcceptOverlappedEx, sizeof(stOverlappedEx));
 		ZeroMemory(&mRecvOverlappedEx, sizeof(stOverlappedEx));
-		ZeroMemory(&mSendOverlappedEx, sizeof(stOverlappedEx));
+		ZeroMemory(&mSendOverlappedEx, sizeof(stOverlappedEx));	
 
-		mRecvBuffer = new char[PACKET_DATA_BUFFER_SIZE];
+		mRecvPacketPool = new char[RECV_PACKET_POOL_SIZE];
+		ZeroMemory(mRecvPacketPool, RECV_PACKET_POOL_SIZE);
 	}
 
-	void ClientInfo::SetId(const UINT32 id)
+	void ClientInfo::SetInfo(const UINT32 id, const size_t packetBuffSize)
 	{
 		mId = id;
+
+		//TODO ¹ö±×
+		//mRecvBuf = new char[packetBuffSize];
+		//ZeroMemory(mRecvBuf, packetBuffSize);
+
+		//mSendBuf = new char[packetBuffSize];
+		//ZeroMemory(mSendBuf, packetBuffSize);
 	}
 
 	UINT32 ClientInfo::GetId() const
@@ -143,13 +172,13 @@ namespace JNet
 
 	std::optional<JCommon::stPacket> ClientInfo::RecvPacket(const char* pData, const size_t dataSize)
 	{
-		if ((mRecvPacketWPos + dataSize) >= PACKET_DATA_BUFFER_SIZE)
+		if ((mRecvPacketWPos + dataSize) >= RECV_PACKET_POOL_SIZE)
 		{
 			auto remainDataSize = mRecvPacketWPos - mRecvPacketRPos;
 
 			if (remainDataSize > 0)
 			{
-				CopyMemory(&mRecvBuffer[0], &mRecvBuffer[mRecvPacketRPos], remainDataSize);
+				CopyMemory(&mRecvPacketPool[0], &mRecvPacketPool[mRecvPacketRPos], remainDataSize);
 				mRecvPacketWPos = remainDataSize;
 			}
 			else
@@ -160,7 +189,7 @@ namespace JNet
 			mRecvPacketRPos = 0;
 		}
 
-		memcpy_s(&mRecvBuffer[mRecvPacketWPos], dataSize, pData, dataSize);
+		memcpy_s(&mRecvPacketPool[mRecvPacketWPos], dataSize, pData, dataSize);
 		mRecvPacketWPos += static_cast<UINT32>(dataSize);
 
 		UINT32 remainByte = mRecvPacketWPos - mRecvPacketRPos;
@@ -170,7 +199,7 @@ namespace JNet
 			return std::nullopt;
 		}
 
-		auto pHeader = (JCommon::stPacketHeader*)(&mRecvBuffer[mRecvPacketRPos]);
+		auto pHeader = (JCommon::stPacketHeader*)(&mRecvPacketPool[mRecvPacketRPos]);
 
 		if (pHeader->mSize > remainByte)
 		{
@@ -187,7 +216,7 @@ namespace JNet
 		memcpy_s(
 			packet.mBody, 
 			bodySize,
-			&mRecvBuffer[JCommon::PACKET_HEADER_SIZE + mRecvPacketRPos], 
+			&mRecvPacketPool[JCommon::PACKET_HEADER_SIZE + mRecvPacketRPos], 
 			bodySize
 		);
 

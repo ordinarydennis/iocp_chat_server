@@ -26,5 +26,15 @@ namespace JChat
 	void ChatUser::SetRoomNumber(const UINT32 roomNumber)
 	{ 
 		mRoomNumber = roomNumber; 
-	};
+	}
+
+	void ChatUser::SetState(STATE state)
+	{
+		mState = state;
+	}
+
+	ChatUser::STATE ChatUser::GetState()
+	{
+		return mState;
+	}
 }

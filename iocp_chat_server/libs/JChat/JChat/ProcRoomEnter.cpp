@@ -59,6 +59,7 @@ namespace JChat
 		}
 
 		chatUser->SetRoomNumber(roomNumber);
+		chatUser->SetState(ChatUser::STATE::ENTER_ROOM);
 
 		JCommon::ResultResPacket resultResPacket;
 		resultResPacket.mResult = JCommon::CLIENT_ERROR_CODE::NONE;

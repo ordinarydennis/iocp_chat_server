@@ -100,5 +100,10 @@ namespace JCommon
 		UINT64 mUniqueId = 0;
 	};
 
+	struct CloseSocketReqPacket		//for server
+	{
+		UINT32 mUniqueId = 0;
+	};
+
 #pragma pack(pop)
 }
