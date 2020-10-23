@@ -12,15 +12,15 @@ namespace JNet
 {
 	using namespace std::chrono;
 
-	ClientInfo::ClientInfo()
+	ClientInfo::ClientInfo(size_t maxBuffSize)
 	{
-		Init();
+		Init(maxBuffSize);
 	}
 
 	ClientInfo::ClientInfo(const ClientInfo& clientInfo)
 		:mId(clientInfo.mId)
 	{
-		Init();
+		Init(clientInfo.mMaxBufSize);
 	}
 
 	ClientInfo::~ClientInfo()
@@ -30,9 +30,21 @@ namespace JNet
 			delete mRecvPacketPool;
 			mRecvPacketPool = nullptr;
 		}
+
+		if (nullptr != mRecvBuf)
+		{
+			delete mRecvBuf;
+			mRecvBuf = nullptr;
+		}
+
+		if (nullptr != mSendBuf)
+		{
+			delete mSendBuf;
+			mSendBuf = nullptr;
+		}
 	}
 
-	void ClientInfo::Init()
+	void ClientInfo::Init(size_t maxBuffSize)
 	{
 		ZeroMemory(&mAcceptOverlappedEx, sizeof(stOverlappedEx));
 		ZeroMemory(&mRecvOverlappedEx, sizeof(stOverlappedEx));
@@ -40,6 +52,12 @@ namespace JNet
 
 		mRecvPacketPool = new char[RECV_PACKET_POOL_SIZE];
 		ZeroMemory(mRecvPacketPool, RECV_PACKET_POOL_SIZE);
+
+		mRecvBuf = new char[maxBuffSize];
+		ZeroMemory(mRecvBuf, maxBuffSize);
+
+		mSendBuf = new char[maxBuffSize];
+		ZeroMemory(mSendBuf, maxBuffSize);
 	}
 
 	void ClientInfo::SetId(const UINT32 id)

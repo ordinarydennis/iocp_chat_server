@@ -13,7 +13,7 @@ namespace JNet
 	class ClientInfo
 	{
 	public:
-		ClientInfo();
+		ClientInfo(size_t maxBuffSize);
 
 		ClientInfo(const ClientInfo& clientInfo);
 
@@ -52,7 +52,7 @@ namespace JNet
 		std::optional<JCommon::stPacket>	RecvPacket(const char* pData, const size_t dataSize);
 
 	private:
-		void					Init();
+		void					Init(size_t maxBuffSize);
 
 		void					SetLatestClosedTimeSec(const UINT64 latestClosedTimeSec);
 
@@ -71,8 +71,12 @@ namespace JNet
 
 		JNet::SQueue<JCommon::EntryPacket>		 mSendPacketQueue;
 
-		char						mRecvBuf[JCommon::MAX_SOCKBUF] = { 0, };
-		char						mSendBuf[JCommon::MAX_SOCKBUF] = { 0, };
+		char*						mRecvBuf = nullptr;
+		char*						mSendBuf = nullptr;
+		UINT32						mMaxBufSize = 0;
+
+		//char						mRecvBuf[JCommon::MAX_SOCKBUF] = { 0, };
+		//char						mSendBuf[JCommon::MAX_SOCKBUF] = { 0, };
 		char						mAcceptBuf[64] = { 0, };
 
 		UINT64						mLatestClosedTimeSec = 0;

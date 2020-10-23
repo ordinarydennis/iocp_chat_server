@@ -90,7 +90,7 @@ namespace JNet
 	{
 		for (UINT32 i = 0; i < maxClientCount; i++)
 		{
-			mClientInfos.emplace_back();
+			mClientInfos.emplace_back(packetBuffSize);
 			mClientInfos[i].SetId(i);
 		}
 
