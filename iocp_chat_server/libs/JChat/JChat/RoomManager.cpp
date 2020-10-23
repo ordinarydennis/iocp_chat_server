@@ -30,7 +30,7 @@ namespace JChat
 		}
 	}
 
-	JCommon::CLIENT_ERROR_CODE RoomManager::EnterRoom(UINT32 roomNumber, ChatUser* chatUser)
+	JCommon::CLIENT_ERROR_CODE RoomManager::EnterRoom(UINT32 roomNumber,const RoomUser& roomUser)
 	{	
 		UINT32 roomIndex = roomNumber - mRoomStartIndex;
 		
@@ -44,7 +44,7 @@ namespace JChat
 			return JCommon::CLIENT_ERROR_CODE::FULL_ROOM_USER;
 		}
 
-		mRooms[roomIndex].AddUser(chatUser);
+		mRooms[roomIndex].AddUser(roomUser);
 
 		return JCommon::CLIENT_ERROR_CODE::NONE;
 	}

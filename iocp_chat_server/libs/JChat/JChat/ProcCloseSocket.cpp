@@ -32,7 +32,7 @@ namespace JChat
 				return;
 			}
 
-			room->RemoveUser(chatUser);
+			room->RemoveUser(chatUser->GetClientId());
 
 			JCommon::RoomLeaveNTFPacket roomLeaveNTFPacket;
 			roomLeaveNTFPacket.mUniqueId = chatUser->GetClientId();

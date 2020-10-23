@@ -26,6 +26,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="ProcCloseSocket.cpp" />
+    <ClCompile Include="ProcCommonLogic.cpp" />
     <ClCompile Include="ProcEcho.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClCompile>
@@ -46,6 +47,7 @@
     </ClCompile>
     <ClCompile Include="Room.cpp" />
     <ClCompile Include="RoomManager.cpp" />
+    <ClCompile Include="RoomUser.cpp" />
     <ClCompile Include="Service.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -57,6 +59,7 @@
     </ClInclude>
     <ClInclude Include="Room.h" />
     <ClInclude Include="RoomManager.h" />
+    <ClInclude Include="RoomUser.h" />
     <ClInclude Include="Service.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

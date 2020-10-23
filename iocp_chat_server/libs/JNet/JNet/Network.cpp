@@ -91,7 +91,7 @@ namespace JNet
 		for (UINT32 i = 0; i < maxClientCount; i++)
 		{
 			mClientInfos.emplace_back();
-			mClientInfos[i].SetInfo(i, packetBuffSize);
+			mClientInfos[i].SetId(i);
 		}
 
 		mMaxClientCount = maxClientCount;

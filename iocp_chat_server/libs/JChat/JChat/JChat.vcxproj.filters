@@ -69,6 +69,12 @@
     <ClCompile Include="ProcCloseSocket.cpp">
       <Filter>Source Files\private\Proc</Filter>
     </ClCompile>
+    <ClCompile Include="RoomUser.cpp">
+      <Filter>Source Files\private</Filter>
+    </ClCompile>
+    <ClCompile Include="ProcCommonLogic.cpp">
+      <Filter>Source Files\private</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Service.h">
@@ -90,6 +96,9 @@
       <Filter>Source Files\public</Filter>
     </ClInclude>
     <ClInclude Include="Define.h">
+      <Filter>Source Files\public</Filter>
+    </ClInclude>
+    <ClInclude Include="RoomUser.h">
       <Filter>Source Files\public</Filter>
     </ClInclude>
   </ItemGroup>

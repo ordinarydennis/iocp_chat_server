@@ -18,7 +18,7 @@ namespace JChat
 
 		Room*						GetRoom(const UINT32 roomNumber);
 
-		JCommon::CLIENT_ERROR_CODE	EnterRoom(UINT32 roomNumber, ChatUser* chatUser);
+		JCommon::CLIENT_ERROR_CODE	EnterRoom(UINT32 roomNumber, const RoomUser& chatUser);
 
 	private:
 		void						CreateRooms();

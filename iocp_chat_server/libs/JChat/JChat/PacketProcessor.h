@@ -21,11 +21,17 @@ namespace JCommon
 
 namespace JChat
 {
+	class ChatUser;
+
 	class ChatUserManager;
 
 	class RoomManager;
 
 	struct ServiceArgs;
+
+	class RoomUser;
+
+	class Room;
 
 	class PacketProcessor
 	{
@@ -55,6 +61,12 @@ namespace JChat
 		void			ProcCloseSocket(const JCommon::stPacket& packet);
 
 		void            RedisProcLogin(const JNet::RedisTask& task);
+		
+		ChatUser*		CheckUserAndSendError(UINT32 clientId);
+
+		bool			EnterRoomAndSendError(UINT32 roomNumber, const RoomUser& roomUser);
+		
+		void			SendRoomUserList(Room* room, UINT32 recvClientId);
 
 		void            Destroy();
 

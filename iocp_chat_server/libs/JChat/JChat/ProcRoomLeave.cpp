@@ -7,21 +7,12 @@ namespace JChat
 {
 	void PacketProcessor::ProcRoomLeave(const JCommon::stPacket& packet)
 	{
-		ChatUser* chatUser = mChatUserManager->GetUser(packet.mClientFrom);
+		ChatUser* chatUser = CheckUserAndSendError(packet.mClientFrom);
 		if (nullptr == chatUser)
 		{
-			JCommon::Logger::Error("User Index %d is invalid", packet.mClientFrom);
-			JCommon::ResultResPacket resultResPacket;
-			resultResPacket.mResult = JCommon::CLIENT_ERROR_CODE::INVALID_USER;
-			SendPacket(
-				packet.mClientFrom,
-				packet.mClientFrom,
-				static_cast<UINT16>(JCommon::PACKET_ID::ROOM_LEAVE_RES),
-				reinterpret_cast<char*>(&resultResPacket),
-				sizeof(resultResPacket)
-			);
 			return;
 		}
+
 		Room* room = mRoomManager->GetRoom(chatUser->GetRoomNumber());
 		if (nullptr == room)
 		{
@@ -49,7 +40,8 @@ namespace JChat
 		);
 
 		chatUser->SetState(ChatUser::STATE::LOGIN);
-		room->RemoveUser(chatUser);
+
+		room->RemoveUser(chatUser->GetClientId());
 
 		JCommon::ResultResPacket resultResPacket;
 		resultResPacket.mResult = JCommon::CLIENT_ERROR_CODE::NONE;

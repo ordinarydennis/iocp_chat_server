@@ -23,12 +23,6 @@ namespace JNet
 		Init();
 	}
 
-	ClientInfo::ClientInfo(const UINT32 id)
-		:mId(id)
-	{
-		Init();
-	}
-
 	ClientInfo::~ClientInfo()
 	{
 		if (nullptr != mRecvPacketPool)
@@ -36,18 +30,6 @@ namespace JNet
 			delete mRecvPacketPool;
 			mRecvPacketPool = nullptr;
 		}
-
-		//if (nullptr != mRecvBuf)
-		//{
-		//	delete mRecvBuf;
-		//	mRecvBuf = nullptr;
-		//}
-
-		//if (nullptr != mSendBuf)
-		//{
-		//	delete mSendBuf;
-		//	mRecvBuf = nullptr;
-		//}
 	}
 
 	void ClientInfo::Init()
@@ -60,16 +42,9 @@ namespace JNet
 		ZeroMemory(mRecvPacketPool, RECV_PACKET_POOL_SIZE);
 	}
 
-	void ClientInfo::SetInfo(const UINT32 id, const size_t packetBuffSize)
+	void ClientInfo::SetId(const UINT32 id)
 	{
 		mId = id;
-
-		//TODO ¹ö±×
-		//mRecvBuf = new char[packetBuffSize];
-		//ZeroMemory(mRecvBuf, packetBuffSize);
-
-		//mSendBuf = new char[packetBuffSize];
-		//ZeroMemory(mSendBuf, packetBuffSize);
 	}
 
 	UINT32 ClientInfo::GetId() const
